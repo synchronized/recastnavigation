@@ -59,6 +59,7 @@ dtNodePool::dtNodePool(int maxNodes, int hashSize) :
 	dtAssert(dtNextPow2(m_hashSize) == (unsigned int)m_hashSize);
 	// pidx is special as 0 means "none" and 1 is the first node. For that reason
 	// we have 1 fewer nodes available than the number of values it can contain.
+	// pidx 很特殊，因为 0 表示“无”，1 表示第一个节点。 因此，可用节点的数量比它可以包含的值的数量少 1 个。
 	dtAssert(m_maxNodes > 0 && m_maxNodes <= DT_NULL_IDX && m_maxNodes <= (1 << DT_NODE_PARENT_BITS) - 1);
 
 	m_nodes = (dtNode*)dtAlloc(sizeof(dtNode)*m_maxNodes, DT_ALLOC_PERM);
@@ -69,6 +70,7 @@ dtNodePool::dtNodePool(int maxNodes, int hashSize) :
 	dtAssert(m_next);
 	dtAssert(m_first);
 
+	//注意: 这里是所有二进制位覆盖为1
 	memset(m_first, 0xff, sizeof(dtNodeIndex)*m_hashSize);
 	memset(m_next, 0xff, sizeof(dtNodeIndex)*m_maxNodes);
 }
@@ -86,6 +88,7 @@ void dtNodePool::clear()
 	m_nodeCount = 0;
 }
 
+//根据id查找节点列表,返回找到的节点数
 unsigned int dtNodePool::findNodes(dtPolyRef id, dtNode** nodes, const int maxNodes)
 {
 	int n = 0;
@@ -105,6 +108,7 @@ unsigned int dtNodePool::findNodes(dtPolyRef id, dtNode** nodes, const int maxNo
 	return n;
 }
 
+//根据id和state查找单个节点，返回节点指针
 dtNode* dtNodePool::findNode(dtPolyRef id, unsigned char state)
 {
 	unsigned int bucket = dtHashRef(id) & (m_hashSize-1);
@@ -118,6 +122,7 @@ dtNode* dtNodePool::findNode(dtPolyRef id, unsigned char state)
 	return 0;
 }
 
+// 通过 ref 和额外的状态信息获取 dtNode。 如果没有则 - 分配
 dtNode* dtNodePool::getNode(dtPolyRef id, unsigned char state)
 {
 	unsigned int bucket = dtHashRef(id) & (m_hashSize-1);
@@ -129,13 +134,13 @@ dtNode* dtNodePool::getNode(dtPolyRef id, unsigned char state)
 			return &m_nodes[i];
 		i = m_next[i];
 	}
-	
+
 	if (m_nodeCount >= m_maxNodes)
 		return 0;
-	
+
 	i = (dtNodeIndex)m_nodeCount;
 	m_nodeCount++;
-	
+
 	// Init node
 	node = &m_nodes[i];
 	node->pidx = 0;
@@ -144,10 +149,10 @@ dtNode* dtNodePool::getNode(dtPolyRef id, unsigned char state)
 	node->id = id;
 	node->state = state;
 	node->flags = 0;
-	
+
 	m_next[i] = m_first[bucket];
 	m_first[bucket] = i;
-	
+
 	return node;
 }
 
@@ -159,7 +164,7 @@ dtNodeQueue::dtNodeQueue(int n) :
 	m_size(0)
 {
 	dtAssert(m_capacity > 0);
-	
+
 	m_heap = (dtNode**)dtAlloc(sizeof(dtNode*)*(m_capacity+1), DT_ALLOC_PERM);
 	dtAssert(m_heap);
 }

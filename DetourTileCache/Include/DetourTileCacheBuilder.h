@@ -81,12 +81,12 @@ struct dtTileCacheAlloc
 	virtual ~dtTileCacheAlloc();
 
 	virtual void reset() {}
-	
+
 	virtual void* alloc(const size_t size)
 	{
 		return dtAlloc(size, DT_ALLOC_TEMP);
 	}
-	
+
 	virtual void free(void* ptr)
 	{
 		dtFree(ptr);

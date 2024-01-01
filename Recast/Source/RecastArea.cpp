@@ -23,6 +23,7 @@
 #include <string.h> // for memcpy and memset
 
 /// Sorts the given data in-place using insertion sort.
+/// 插入排序
 ///
 /// @param	data		The data to sort
 /// @param	dataLength	The number of elements in @p data
@@ -37,7 +38,7 @@ static void insertSort(unsigned char* data, const int dataLength)
 			// Shift over values
 			data[insertionIndex + 1] = data[insertionIndex];
 		}
-		
+
 		// Insert the value in sorted order.
 		data[insertionIndex + 1] = value;
 	}
@@ -45,6 +46,7 @@ static void insertSort(unsigned char* data, const int dataLength)
 
 // TODO (graham): This is duplicated in the ConvexVolumeTool in RecastDemo
 /// Checks if a point is contained within a polygon
+/// 检查点是否在多边形内(xz平面)
 ///
 /// @param[in]	numVerts	Number of vertices in the polygon
 /// @param[in]	verts		The polygon vertices
@@ -72,6 +74,7 @@ static bool pointInPoly(int numVerts, const float* verts, const float* point)
 	return inPoly;
 }
 
+/// 按指定半径侵蚀高度场内的可步行区域。
 bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactHeightfield& compactHeightfield)
 {
 	rcAssert(context != NULL);
@@ -90,8 +93,9 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 		return false;
 	}
 	memset(distanceToBoundary, 0xff, sizeof(unsigned char) * compactHeightfield.spanCount);
-	
+
 	// Mark boundary cells.
+	// 标记出边界，本身span为不可走或者与任意邻居不可达，则span为边界，dist[i]设置为0
 	for (int z = 0; z < zSize; ++z)
 	{
 		for (int x = 0; x < xSize; ++x)
@@ -107,6 +111,7 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 				const rcCompactSpan& span = compactHeightfield.spans[spanIndex];
 
 				// Check that there is a non-null adjacent span in each of the 4 cardinal directions.
+				// 检查 4 个基本方向中的每一个方向上是否存在非零相邻span。
 				int neighborCount = 0;
 				for (int direction = 0; direction < 4; ++direction)
 				{
@@ -115,19 +120,20 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 					{
 						break;
 					}
-					
+
 					const int neighborX = x + rcGetDirOffsetX(direction);
 					const int neighborZ = z + rcGetDirOffsetY(direction);
 					const int neighborSpanIndex = (int)compactHeightfield.cells[neighborX + neighborZ * zStride].index + neighborConnection;
-					
+
 					if (compactHeightfield.areas[neighborSpanIndex] == RC_NULL_AREA)
 					{
 						break;
 					}
 					neighborCount++;
 				}
-				
+
 				// At least one missing neighbour, so this is a boundary cell.
+				// 至少缺少一个邻居，因此这是一个边界单元。
 				if (neighborCount != 4)
 				{
 					distanceToBoundary[spanIndex] = 0;
@@ -135,10 +141,11 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 			}
 		}
 	}
-	
+
 	unsigned char newDistance;
-	
+
 	// Pass 1
+	// 计算每一个span与边界的距离(0-255), 从(0, 0) 到 (xSize, zSize)
 	for (int z = 0; z < zSize; ++z)
 	{
 		for (int x = 0; x < xSize; ++x)
@@ -206,6 +213,7 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 	}
 
 	// Pass 2
+	// 计算每一个span与边界的距离(0-255), 从(xSize, zSize) 到 (0, 0)
 	for (int z = zSize - 1; z >= 0; --z)
 	{
 		for (int x = xSize - 1; x >= 0; --x)
@@ -275,6 +283,7 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 	const unsigned char minBoundaryDistance = (unsigned char)(erosionRadius * 2);
 	for (int spanIndex = 0; spanIndex < compactHeightfield.spanCount; ++spanIndex)
 	{
+		// erosionRadius范围内的设置为不可走
 		if (distanceToBoundary[spanIndex] < minBoundaryDistance)
 		{
 			compactHeightfield.areas[spanIndex] = RC_NULL_AREA;
@@ -282,14 +291,15 @@ bool rcErodeWalkableArea(rcContext* context, const int erosionRadius, rcCompactH
 	}
 
 	rcFree(distanceToBoundary);
-	
+
 	return true;
 }
 
+/// 将中值过滤器应用于可步行区域类型（基于区域 ID），消除噪声。
 bool rcMedianFilterWalkableArea(rcContext* context, rcCompactHeightfield& compactHeightfield)
 {
 	rcAssert(context);
-	
+
 	const int xSize = compactHeightfield.width;
 	const int zSize = compactHeightfield.height;
 	const int zStride = xSize; // For readability
@@ -332,7 +342,7 @@ bool rcMedianFilterWalkableArea(rcContext* context, rcCompactHeightfield& compac
 					{
 						continue;
 					}
-					
+
 					const int aX = x + rcGetDirOffsetX(dir);
 					const int aZ = z + rcGetDirOffsetY(dir);
 					const int aIndex = (int)compactHeightfield.cells[aX + aZ * zStride].index + rcGetCon(span, dir);
@@ -356,6 +366,7 @@ bool rcMedianFilterWalkableArea(rcContext* context, rcCompactHeightfield& compac
 					}
 				}
 				insertSort(neighborAreas, 9);
+				//用自己+周围8个格子的中间值
 				areas[spanIndex] = neighborAreas[4];
 			}
 		}
@@ -368,6 +379,7 @@ bool rcMedianFilterWalkableArea(rcContext* context, rcCompactHeightfield& compac
 	return true;
 }
 
+/// 将区域 ID 应用于指定边界框内的所有span。 （AABB）
 void rcMarkBoxArea(rcContext* context, const float* boxMinBounds, const float* boxMaxBounds, unsigned char areaId,
                    rcCompactHeightfield& compactHeightfield)
 {
@@ -379,7 +391,8 @@ void rcMarkBoxArea(rcContext* context, const float* boxMinBounds, const float* b
 	const int zSize = compactHeightfield.height;
 	const int zStride = xSize; // For readability
 
-	// Find the footprint of the box area in grid cell coordinates. 
+	// Find the footprint of the box area in grid cell coordinates.
+	// 在网格单元坐标中查找框区域的足迹。
 	int minX = (int)((boxMinBounds[0] - compactHeightfield.bmin[0]) / compactHeightfield.cs);
 	int minY = (int)((boxMinBounds[1] - compactHeightfield.bmin[1]) / compactHeightfield.ch);
 	int minZ = (int)((boxMinBounds[2] - compactHeightfield.bmin[2]) / compactHeightfield.cs);
@@ -429,6 +442,7 @@ void rcMarkBoxArea(rcContext* context, const float* boxMinBounds, const float* b
 	}
 }
 
+/// 将area ID 应用于指定凸多边形内的所有span。
 void rcMarkConvexPolyArea(rcContext* context, const float* verts, const int numVerts,
 						  const float minY, const float maxY, unsigned char areaId,
 						  rcCompactHeightfield& compactHeightfield)
@@ -442,6 +456,7 @@ void rcMarkConvexPolyArea(rcContext* context, const float* verts, const int numV
 	const int zStride = xSize; // For readability
 
 	// Compute the bounding box of the polygon
+	// 计算多边形的边界框
 	float bmin[3];
 	float bmax[3];
 	rcVcopy(bmin, verts);
@@ -454,7 +469,8 @@ void rcMarkConvexPolyArea(rcContext* context, const float* verts, const int numV
 	bmin[1] = minY;
 	bmax[1] = maxY;
 
-	// Compute the grid footprint of the polygon 
+	// Compute the grid footprint of the polygon
+	// 计算多边形覆盖的格子
 	int minx = (int)((bmin[0] - compactHeightfield.bmin[0]) / compactHeightfield.cs);
 	int miny = (int)((bmin[1] - compactHeightfield.bmin[1]) / compactHeightfield.ch);
 	int minz = (int)((bmin[2] - compactHeightfield.bmin[2]) / compactHeightfield.cs);
@@ -463,6 +479,7 @@ void rcMarkConvexPolyArea(rcContext* context, const float* verts, const int numV
 	int maxz = (int)((bmax[2] - compactHeightfield.bmin[2]) / compactHeightfield.cs);
 
 	// Early-out if the polygon lies entirely outside the grid.
+	// 如果多边形完全位于网格之外，则提前退出。
 	if (maxx < 0) { return; }
     if (minx >= xSize) { return; }
     if (maxz < 0) { return; }
@@ -497,12 +514,13 @@ void rcMarkConvexPolyArea(rcContext* context, const float* verts, const int numV
 					continue;
 				}
 
+				//span的xz平面中心点
 				const float point[] = {
 					compactHeightfield.bmin[0] + ((float)x + 0.5f) * compactHeightfield.cs,
 					0,
 					compactHeightfield.bmin[2] + ((float)z + 0.5f) * compactHeightfield.cs
 				};
-				
+
 				if (pointInPoly(numVerts, verts, point))
 				{
 					compactHeightfield.areas[spanIndex] = areaId;
@@ -529,6 +547,7 @@ static void rcVsafeNormalize(float* v)
 	}
 }
 
+/// 将凸多边形沿其顶点法向量扩展给定的偏移量。 插入额外的顶点以使尖角成斜角。
 int rcOffsetPoly(const float* verts, const int numVerts, const float offset, float* outVerts, const int maxOutVerts)
 {
 	// Defines the limit at which a miter becomes a bevel.
@@ -540,6 +559,7 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
 	for (int vertIndex = 0; vertIndex < numVerts; vertIndex++)
 	{
         // Grab three vertices of the polygon.
+		// 抓住多边形的三个顶点。(对面的顶点，当前顶点，下一个顶点)
 		const int vertIndexA = (vertIndex + numVerts - 1) % numVerts;
 		const int vertIndexB = vertIndex;
 		const int vertIndexC = (vertIndex + 1) % numVerts;
@@ -548,12 +568,14 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
 		const float* vertC = &verts[vertIndexC * 3];
 
         // From A to B on the x/z plane
+		// 向量AB的xz平面投影
 		float prevSegmentDir[3];
 		rcVsub(prevSegmentDir, vertB, vertA);
-		prevSegmentDir[1] = 0; // Squash onto x/z plane
+		prevSegmentDir[1] = 0; // Squash onto x/z plane(投影到xz平面)
 		rcVsafeNormalize(prevSegmentDir);
-		
+
         // From B to C on the x/z plane
+		// 向量BC的xz平面投影
 		float currSegmentDir[3];
 		rcVsub(currSegmentDir, vertC, vertB);
 		currSegmentDir[1] = 0; // Squash onto x/z plane
@@ -562,6 +584,8 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
         // The y component of the cross product of the two normalized segment directions.
         // The X and Z components of the cross product are both zero because the two
         // segment direction vectors fall within the x/z plane.
+        // 两个标准化线段方向的叉积的 y 分量。
+        // 叉积的 X 和 Z 分量均为零，因为两个线段方向向量落在 x/z 平面内。
         float cross = currSegmentDir[0] * prevSegmentDir[2] - prevSegmentDir[0] * currSegmentDir[2];
 
         // CCW perpendicular vector to AB.  The segment normal.
@@ -575,15 +599,18 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
         // Average the two segment normals to get the proportional miter offset for B.
         // This isn't normalized because it's defining the distance and direction the corner will need to be
         // adjusted proportionally to the edge offsets to properly miter the adjoining edges.
+		// 对两个线段法线进行平均以获得 B 的比例斜接偏移。这并未标准化，因为它定义了角需要按边缘偏移量按比例调整的距离和方向，以正确斜接相邻边缘。
 		float cornerMiterX = (prevSegmentNormX + currSegmentNormX) * 0.5f;
 		float cornerMiterZ = (prevSegmentNormZ + currSegmentNormZ) * 0.5f;
         const float cornerMiterSqMag = rcSqr(cornerMiterX) + rcSqr(cornerMiterZ);
 
         // If the magnitude of the segment normal average is less than about .69444,
         // the corner is an acute enough angle that the result should be beveled.
+		// 如果线段法向平均值的大小小于约 0.69444，则拐角的角度足够尖锐，结果应为斜角。
         const bool bevel = cornerMiterSqMag * MITER_LIMIT * MITER_LIMIT < 1.0f;
 
         // Scale the corner miter so it's proportional to how much the corner should be offset compared to the edges.
+		// 缩放角斜接，使其与角相对于边缘的偏移量成正比。
 		if (cornerMiterSqMag > EPSILON)
 		{
 			const float scale = 1.0f / cornerMiterSqMag;
@@ -591,7 +618,9 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
             cornerMiterZ *= scale;
 		}
 
-		if (bevel && cross < 0.0f) // If the corner is convex and an acute enough angle, generate a bevel.
+		// If the corner is convex and an acute enough angle, generate a bevel.
+		// 如果角是凸的并且角度足够锐，则生成斜角。
+		if (bevel && cross < 0.0f)
 		{
 			if (numOutVerts + 2 > maxOutVerts)
 			{
@@ -600,6 +629,7 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
 
             // Generate two bevel vertices at a distances from B proportional to the angle between the two segments.
             // Move each bevel vertex out proportional to the given offset.
+            // 生成两个斜角顶点，其距 B 的距离与两条线段之间的角度成正比。 将每个斜角顶点与给定的偏移量成比例地移出。
 			float d = (1.0f - (prevSegmentDir[0] * currSegmentDir[0] + prevSegmentDir[2] * currSegmentDir[2])) * 0.5f;
 
 			outVerts[numOutVerts * 3 + 0] = vertB[0] + (-prevSegmentNormX + prevSegmentDir[0] * d) * offset;
@@ -620,6 +650,7 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
 			}
 
             // Move B along the miter direction by the specified offset.
+			// 沿斜接方向将 B 移动指定的偏移量。
 			outVerts[numOutVerts * 3 + 0] = vertB[0] - cornerMiterX * offset;
 			outVerts[numOutVerts * 3 + 1] = vertB[1];
 			outVerts[numOutVerts * 3 + 2] = vertB[2] - cornerMiterZ * offset;
@@ -630,6 +661,7 @@ int rcOffsetPoly(const float* verts, const int numVerts, const float offset, flo
 	return numOutVerts;
 }
 
+/// 将span id 应用到指定 y 轴对齐圆柱体内的所有span。
 void rcMarkCylinderArea(rcContext* context, const float* position, const float radius, const float height,
                         unsigned char areaId, rcCompactHeightfield& compactHeightfield)
 {

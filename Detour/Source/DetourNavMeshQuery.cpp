@@ -30,33 +30,44 @@
 /// @class dtQueryFilter
 ///
 /// <b>The Default Implementation</b>
-/// 
+/// 默认实现
+///
 /// At construction: All area costs default to 1.0.  All flags are included
 /// and none are excluded.
-/// 
+/// 构造时：所有面积成本默认为 1.0。 包括所有标志，并且不排除任何标志。
+///
 /// If a polygon has both an include and an exclude flag, it will be excluded.
-/// 
-/// The way filtering works, a navigation mesh polygon must have at least one flag 
+/// 如果多边形同时具有包含和排除标志，则它将被排除。
+///
+/// The way filtering works, a navigation mesh polygon must have at least one flag
 /// set to ever be considered by a query. So a polygon with no flags will never
 /// be considered.
+/// 根据过滤的工作方式，导航网格多边形必须至少设置一个标志才能被查询考虑。 因此，永远不会考虑没有标志的多边形。
 ///
 /// Setting the include flags to 0 will result in all polygons being excluded.
+/// 将包含标志设置为 0 将导致排除所有多边形。
 ///
 /// <b>Custom Implementations</b>
-/// 
+/// 自定义实现
+///
 /// DT_VIRTUAL_QUERYFILTER must be defined in order to extend this class.
-/// 
-/// Implement a custom query filter by overriding the virtual passFilter() 
-/// and getCost() functions. If this is done, both functions should be as 
-/// fast as possible. Use cached local copies of data rather than accessing 
+/// DT_VIRTUAL_QUERYFILTER 必须定义才能扩展此类型
+///
+/// Implement a custom query filter by overriding the virtual passFilter()
+/// and getCost() functions. If this is done, both functions should be as
+/// fast as possible. Use cached local copies of data rather than accessing
 /// your own objects where possible.
-/// 
-/// Custom implementations do not need to adhere to the flags or cost logic 
-/// used by the default implementation.  
-/// 
+/// 通过重写虚拟 passFilter() 和 getCost() 函数来实现自定义查询过滤器。
+/// 如果这样做，两个函数都应该尽可能快。 尽可能使用缓存的本地数据副本，而不是访问您自己的对象。
+///
+/// Custom implementations do not need to adhere to the flags or cost logic
+/// used by the default implementation.
+/// 自定义实现不需要遵守默认实现使用的标志或成本逻辑。
+///
 /// In order for A* searches to work properly, the cost should be proportional to
-/// the travel distance. Implementing a cost modifier less than 1.0 is likely 
+/// the travel distance. Implementing a cost modifier less than 1.0 is likely
 /// to lead to problems during pathfinding.
+/// 为了使 A* 搜索正常工作，成本应与行进距离成正比。 实施小于 1.0 的成本修正值可能会导致寻路过程中出现问题。
 ///
 /// @see dtNavMeshQuery
 
@@ -98,9 +109,11 @@ inline float dtQueryFilter::getCost(const float* pa, const float* pb,
 {
 	return dtVdist(pa, pb) * m_areaCost[curPoly->getArea()];
 }
-#endif	
-	
-static const float H_SCALE = 0.999f; // Search heuristic scale.
+#endif
+
+// Search heuristic scale.
+// 搜索启发式规模。
+static const float H_SCALE = 0.999f;
 
 
 dtNavMeshQuery* dtAllocNavMeshQuery()
@@ -120,23 +133,34 @@ void dtFreeNavMeshQuery(dtNavMeshQuery* navmesh)
 dtPolyQuery::~dtPolyQuery()
 {
 	// Defined out of line to fix the weak v-tables warning
+	// 定义出线以修复弱 v-tables 警告
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
 /// @class dtNavMeshQuery
 ///
-/// For methods that support undersized buffers, if the buffer is too small 
-/// to hold the entire result set the return status of the method will include 
+/// For methods that support undersized buffers, if the buffer is too small
+/// to hold the entire result set the return status of the method will include
 /// the #DT_BUFFER_TOO_SMALL flag.
 ///
 /// Constant member functions can be used by multiple clients without side
 /// effects. (E.g. No change to the closed list. No impact on an in-progress
 /// sliced path query. Etc.)
-/// 
-/// Walls and portals: A @e wall is a polygon segment that is 
+///
+/// Walls and portals: A @e wall is a polygon segment that is
 /// considered impassable. A @e portal is a passable segment between polygons.
 /// A portal may be treated as a wall based on the dtQueryFilter used for a query.
+///
+/// @see dtNavMesh, dtQueryFilter, #dtAllocNavMeshQuery(), #dtAllocNavMeshQuery()
+
+/// @class dtNavMeshQuery
+///
+/// 对于支持较小缓冲区的方法，如果缓冲区太小而无法容纳整个结果集，则该方法的返回状态将包括 #DT_BUFFER_TOO_SMALL 标志。
+///
+/// 常量成员函数可以被多个客户端使用而不会产生副作用。(例如，不对关闭列表进行任何更改。对正在进行的切片路径查询没有影响。等等)
+///
+/// 墙和门户：@e墙是被认为无法通过的多边形段。@e 入口是多边形之间的可通行段。根据用于查询的 dtQueryFilter，门户可以被视为一堵墙。
 ///
 /// @see dtNavMesh, dtQueryFilter, #dtAllocNavMeshQuery(), #dtAllocNavMeshQuery()
 
@@ -162,19 +186,22 @@ dtNavMeshQuery::~dtNavMeshQuery()
 	dtFree(m_openList);
 }
 
-/// @par 
+/// @par
 ///
 /// Must be the first function called after construction, before other
 /// functions are used.
 ///
 /// This function can be used multiple times.
+///
+/// 必须是构造后、使用其他函数之前调用的第一个函数。
+/// 该功能可以多次使用。
 dtStatus dtNavMeshQuery::init(const dtNavMesh* nav, const int maxNodes)
 {
 	if (maxNodes > DT_NULL_IDX || maxNodes > (1 << DT_NODE_PARENT_BITS) - 1)
 		return DT_FAILURE | DT_INVALID_PARAM;
 
 	m_nav = nav;
-	
+
 	if (!m_nodePool || m_nodePool->getMaxNodes() < maxNodes)
 	{
 		if (m_nodePool)
@@ -191,7 +218,7 @@ dtStatus dtNavMeshQuery::init(const dtNavMesh* nav, const int maxNodes)
 	{
 		m_nodePool->clear();
 	}
-	
+
 	if (!m_tinyNodePool)
 	{
 		m_tinyNodePool = new (dtAlloc(sizeof(dtNodePool), DT_ALLOC_PERM)) dtNodePool(64, 32);
@@ -202,7 +229,7 @@ dtStatus dtNavMeshQuery::init(const dtNavMesh* nav, const int maxNodes)
 	{
 		m_tinyNodePool->clear();
 	}
-	
+
 	if (!m_openList || m_openList->getCapacity() < maxNodes)
 	{
 		if (m_openList)
@@ -219,10 +246,11 @@ dtStatus dtNavMeshQuery::init(const dtNavMesh* nav, const int maxNodes)
 	{
 		m_openList->clear();
 	}
-	
+
 	return DT_SUCCESS;
 }
 
+/// 返回导航网格上的随机位置。
 dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*frand)(),
 										 dtPolyRef* randomRef, float* randomPt) const
 {
@@ -232,15 +260,19 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 		return DT_FAILURE | DT_INVALID_PARAM;
 
 	// Randomly pick one tile. Assume that all tiles cover roughly the same area.
+	// 随机选择一块tile。 假设所有tile覆盖大致相同的区域。
 	const dtMeshTile* tile = 0;
 	float tsum = 0.0f;
 	for (int i = 0; i < m_nav->getMaxTiles(); i++)
 	{
 		const dtMeshTile* t = m_nav->getTile(i);
 		if (!t || !t->header) continue;
-		
+
 		// Choose random tile using reservoir sampling.
-		const float area = 1.0f; // Could be tile area too.
+		// 使用蓄水池采样选择随机tile。
+		// Could be tile area too.
+		// 也可能是tile区域。
+		const float area = 1.0f;
 		tsum += area;
 		const float u = frand();
 		if (u*tsum <= area)
@@ -250,6 +282,7 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 		return DT_FAILURE;
 
 	// Randomly pick one polygon weighted by polygon area.
+	// 随机选取一个按多边形面积加权的多边形。
 	const dtPoly* poly = 0;
 	dtPolyRef polyRef = 0;
 	const dtPolyRef base = m_nav->getPolyRefBase(tile);
@@ -259,14 +292,17 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 	{
 		const dtPoly* p = &tile->polys[i];
 		// Do not return off-mesh connection polygons.
+		// 不要返回网络外连接多边形。
 		if (p->getType() != DT_POLYTYPE_GROUND)
 			continue;
 		// Must pass filter
+		// 必须经过过滤器
 		const dtPolyRef ref = base | (dtPolyRef)i;
 		if (!filter->passFilter(ref, tile, p))
 			continue;
 
 		// Calc area of the polygon.
+		// 计算多边形的面积。
 		float polyArea = 0.0f;
 		for (int j = 2; j < p->vertCount; ++j)
 		{
@@ -277,6 +313,7 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 		}
 
 		// Choose random polygon weighted by area, using reservoir sampling.
+		// 使用水库采样选择按面积加权的随机多边形。
 		areaSum += polyArea;
 		const float u = frand();
 		if (u*areaSum <= polyArea)
@@ -285,11 +322,12 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 			polyRef = ref;
 		}
 	}
-	
+
 	if (!poly)
 		return DT_FAILURE;
 
 	// Randomly pick point on polygon.
+	// 随机选取多边形上的点。
 	const float* v = &tile->verts[poly->verts[0]*3];
 	float verts[3*DT_VERTS_PER_POLYGON];
 	float areas[DT_VERTS_PER_POLYGON];
@@ -299,21 +337,24 @@ dtStatus dtNavMeshQuery::findRandomPoint(const dtQueryFilter* filter, float (*fr
 		v = &tile->verts[poly->verts[j]*3];
 		dtVcopy(&verts[j*3],v);
 	}
-	
+
 	const float s = frand();
 	const float t = frand();
-	
+
 	float pt[3];
 	dtRandomPointInConvexPoly(verts, poly->vertCount, areas, s, t, pt);
-	
+
 	closestPointOnPoly(polyRef, pt, pt, NULL);
-	
+
 	dtVcopy(randomPt, pt);
 	*randomRef = polyRef;
 
 	return DT_SUCCESS;
 }
 
+/// 返回导航网格上指定位置范围内的随机位置。
+/// 多边形是按面积加权选择的。 搜索以与多边形数量线性相关的方式运行。
+/// 该位置并不完全受圆约束，但它限制了访问的多边形。
 dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const float* centerPos, const float maxRadius,
 													 const dtQueryFilter* filter, float (*frand)(),
 													 dtPolyRef* randomRef, float* randomPt) const
@@ -321,8 +362,9 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 	dtAssert(m_nav);
 	dtAssert(m_nodePool);
 	dtAssert(m_openList);
-	
+
 	// Validate input
+	// 验证输入
 	if (!m_nav->isValidPolyRef(startRef) ||
 		!centerPos || !dtVisfinite(centerPos) ||
 		maxRadius < 0 || !dtMathIsfinite(maxRadius) ||
@@ -330,16 +372,16 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	const dtMeshTile* startTile = 0;
 	const dtPoly* startPoly = 0;
 	m_nav->getTileAndPolyByRefUnsafe(startRef, &startTile, &startPoly);
 	if (!filter->passFilter(startRef, startTile, startPoly))
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	m_nodePool->clear();
 	m_openList->clear();
-	
+
 	dtNode* startNode = m_nodePool->getNode(startRef);
 	dtVcopy(startNode->pos, centerPos);
 	startNode->pidx = 0;
@@ -348,9 +390,9 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_OPEN;
 	m_openList->push(startNode);
-	
+
 	dtStatus status = DT_SUCCESS;
-	
+
 	const float radiusSqr = dtSqr(maxRadius);
 	float areaSum = 0.0f;
 
@@ -363,18 +405,22 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 		dtNode* bestNode = m_openList->pop();
 		bestNode->flags &= ~DT_NODE_OPEN;
 		bestNode->flags |= DT_NODE_CLOSED;
-		
+
 		// Get poly and tile.
 		// The API input has been checked already, skip checking internal data.
+		// 获取聚酯和tile。
+		// API 输入已被检查，跳过检查内部数据。
 		const dtPolyRef bestRef = bestNode->id;
 		const dtMeshTile* bestTile = 0;
 		const dtPoly* bestPoly = 0;
 		m_nav->getTileAndPolyByRefUnsafe(bestRef, &bestTile, &bestPoly);
 
 		// Place random locations on on ground.
+		// 在地面上随机放置位置。
 		if (bestPoly->getType() == DT_POLYTYPE_GROUND)
 		{
 			// Calc area of the polygon.
+			// 计算多边形的面积。
 			float polyArea = 0.0f;
 			for (int j = 2; j < bestPoly->vertCount; ++j)
 			{
@@ -384,6 +430,7 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 				polyArea += dtTriArea2D(va,vb,vc);
 			}
 			// Choose random polygon weighted by area, using reservoir sampling.
+			// 使用水库采样选择按面积加权的随机多边形。
 			areaSum += polyArea;
 			const float u = frand();
 			if (u*areaSum <= polyArea)
@@ -393,9 +440,10 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 				randomPolyRef = bestRef;
 			}
 		}
-		
-		
+
+
 		// Get parent poly and tile.
+		// 获取父多边形和瓷砖。
 		dtPolyRef parentRef = 0;
 		const dtMeshTile* parentTile = 0;
 		const dtPoly* parentPoly = 0;
@@ -403,60 +451,66 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 			parentRef = m_nodePool->getNodeAtIdx(bestNode->pidx)->id;
 		if (parentRef)
 			m_nav->getTileAndPolyByRefUnsafe(parentRef, &parentTile, &parentPoly);
-		
+
 		for (unsigned int i = bestPoly->firstLink; i != DT_NULL_LINK; i = bestTile->links[i].next)
 		{
 			const dtLink* link = &bestTile->links[i];
 			dtPolyRef neighbourRef = link->ref;
 			// Skip invalid neighbours and do not follow back to parent.
+			// 跳过无效的邻居，并且不跟踪回到父级。
 			if (!neighbourRef || neighbourRef == parentRef)
 				continue;
-			
+
 			// Expand to neighbour
+			// 扩展到邻居
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
 			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
-			
+
 			// Do not advance if the polygon is excluded by the filter.
+			// 如果多边形被过滤器排除，则不要前进。
 			if (!filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
-			
+
 			// Find edge and calc distance to the edge.
+			// 找到边缘并计算到边缘的距离。
 			float va[3], vb[3];
 			if (!getPortalPoints(bestRef, bestPoly, bestTile, neighbourRef, neighbourPoly, neighbourTile, va, vb))
 				continue;
-			
+
 			// If the circle is not touching the next polygon, skip it.
+			// 如果圆没有接触下一个多边形，则跳过它。
 			float tseg;
 			float distSqr = dtDistancePtSegSqr2D(centerPos, va, vb, tseg);
 			if (distSqr > radiusSqr)
 				continue;
-			
+
 			dtNode* neighbourNode = m_nodePool->getNode(neighbourRef);
 			if (!neighbourNode)
 			{
 				status |= DT_OUT_OF_NODES;
 				continue;
 			}
-			
+
 			if (neighbourNode->flags & DT_NODE_CLOSED)
 				continue;
-			
+
 			// Cost
 			if (neighbourNode->flags == 0)
 				dtVlerp(neighbourNode->pos, va, vb, 0.5f);
-			
+
 			const float total = bestNode->total + dtVdist(bestNode->pos, neighbourNode->pos);
-			
+
 			// The node is already in open list and the new result is worse, skip.
+			// 该节点已在 open list 中，并且新结果更糟，请跳过。
 			if ((neighbourNode->flags & DT_NODE_OPEN) && total >= neighbourNode->total)
 				continue;
-			
+
 			neighbourNode->id = neighbourRef;
 			neighbourNode->flags = (neighbourNode->flags & ~DT_NODE_CLOSED);
 			neighbourNode->pidx = m_nodePool->getNodeIdx(bestNode);
 			neighbourNode->total = total;
-			
+
 			if (neighbourNode->flags & DT_NODE_OPEN)
 			{
 				m_openList->modify(neighbourNode);
@@ -468,11 +522,12 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 			}
 		}
 	}
-	
+
 	if (!randomPoly)
 		return DT_FAILURE;
-	
+
 	// Randomly pick point on polygon.
+	// 随机选取多边形上的点。
 	const float* v = &randomTile->verts[randomPoly->verts[0]*3];
 	float verts[3*DT_VERTS_PER_POLYGON];
 	float areas[DT_VERTS_PER_POLYGON];
@@ -482,18 +537,18 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 		v = &randomTile->verts[randomPoly->verts[j]*3];
 		dtVcopy(&verts[j*3],v);
 	}
-	
+
 	const float s = frand();
 	const float t = frand();
-	
+
 	float pt[3];
 	dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
-	
+
 	closestPointOnPoly(randomPolyRef, pt, pt, NULL);
-	
+
 	dtVcopy(randomPt, pt);
 	*randomRef = randomPolyRef;
-	
+
 	return status;
 }
 
@@ -507,6 +562,12 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
 /// @p pos does not have to be within the bounds of the polygon or navigation mesh.
 ///
 /// See closestPointOnPolyBoundary() for a limited but faster option.
+///
+/// @par
+///
+/// 使用细节多边形来查找表面高度。 （最准确。）
+/// @p pos 不必位于多边形或导航网格的边界内。
+/// 请参阅closestPointOnPolyBoundary() 以获取有限但更快的选项。
 ///
 dtStatus dtNavMeshQuery::closestPointOnPoly(dtPolyRef ref, const float* pos, float* closest, bool* posOverPoly) const
 {
@@ -524,19 +585,18 @@ dtStatus dtNavMeshQuery::closestPointOnPoly(dtPolyRef ref, const float* pos, flo
 
 /// @par
 ///
-/// Much faster than closestPointOnPoly().
+/// 比closestPointOnPoly() 快得多。
 ///
-/// If the provided position lies within the polygon's xz-bounds (above or below), 
-/// then @p pos and @p closest will be equal.
+/// 如果提供的位置位于多边形的 xz 边界内（上方或下方），则 @p pos 和 @p 最接近的位置将相等。
 ///
-/// The height of @p closest will be the polygon boundary.  The height detail is not used.
-/// 
-/// @p pos does not have to be within the bounds of the polybon or the navigation mesh.
-/// 
+/// 最接近的 @p 的高度将是多边形边界。 不使用高度详细信息。
+///
+/// @p pos 不必位于多边形或导航网格的边界内。
+///
 dtStatus dtNavMeshQuery::closestPointOnPolyBoundary(dtPolyRef ref, const float* pos, float* closest) const
 {
 	dtAssert(m_nav);
-	
+
 	const dtMeshTile* tile = 0;
 	const dtPoly* poly = 0;
 	if (dtStatusFailed(m_nav->getTileAndPolyByRef(ref, &tile, &poly)))
@@ -544,9 +604,9 @@ dtStatus dtNavMeshQuery::closestPointOnPolyBoundary(dtPolyRef ref, const float* 
 
 	if (!pos || !dtVisfinite(pos) || !closest)
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	// Collect vertices.
-	float verts[DT_VERTS_PER_POLYGON*3];	
+	float verts[DT_VERTS_PER_POLYGON*3];
 	float edged[DT_VERTS_PER_POLYGON];
 	float edget[DT_VERTS_PER_POLYGON];
 	int nv = 0;
@@ -554,17 +614,19 @@ dtStatus dtNavMeshQuery::closestPointOnPolyBoundary(dtPolyRef ref, const float* 
 	{
 		dtVcopy(&verts[nv*3], &tile->verts[poly->verts[i]*3]);
 		nv++;
-	}		
-	
+	}
+
 	bool inside = dtDistancePtPolyEdgesSqr(pos, verts, nv, edged, edget);
 	if (inside)
 	{
 		// Point is inside the polygon, return the point.
+		// 点在多边形内部，返回该点。
 		dtVcopy(closest, pos);
 	}
 	else
 	{
 		// Point is outside the polygon, dtClamp to nearest edge.
+		// 点在多边形外部，dtClamp 到最近的边。
 		float dmin = edged[0];
 		int imin = 0;
 		for (int i = 1; i < nv; ++i)
@@ -579,15 +641,15 @@ dtStatus dtNavMeshQuery::closestPointOnPolyBoundary(dtPolyRef ref, const float* 
 		const float* vb = &verts[((imin+1)%nv)*3];
 		dtVlerp(closest, va, vb, edget[imin]);
 	}
-	
+
 	return DT_SUCCESS;
 }
 
 /// @par
 ///
-/// Will return #DT_FAILURE | DT_INVALID_PARAM if the provided position is outside the xz-bounds 
+/// Will return #DT_FAILURE | DT_INVALID_PARAM if the provided position is outside the xz-bounds
 /// of the polygon.
-/// 
+/// 将返回#DT_FAILURE | 如果提供的位置位于多边形的 xz-bounds 之外，则为 DT_INVALID_PARAM。
 dtStatus dtNavMeshQuery::getPolyHeight(dtPolyRef ref, const float* pos, float* height) const
 {
 	dtAssert(m_nav);
@@ -603,6 +665,7 @@ dtStatus dtNavMeshQuery::getPolyHeight(dtPolyRef ref, const float* pos, float* h
 	// We used to return success for offmesh connections, but the
 	// getPolyHeight in DetourNavMesh does not do this, so special
 	// case it here.
+	// 我们曾经为 offmesh 连接返回成功，但 DetourNavMesh 中的 getPolyHeight 不会执行此操作，因此这里有特殊情况。
 	if (poly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 	{
 		const float* v0 = &tile->verts[poly->verts[0]*3];
@@ -656,17 +719,18 @@ public:
 
 			// If a point is directly over a polygon and closer than
 			// climb height, favor that instead of straight line nearest point.
+			// 如果某个点直接位于多边形上方并且比爬升高度更近，则优先选择该点而不是直线最近点。
 			dtVsub(diff, m_center, closestPtPoly);
 			if (posOverPoly)
 			{
 				d = dtAbs(diff[1]) - tile->header->walkableClimb;
-				d = d > 0 ? d*d : 0;			
+				d = d > 0 ? d*d : 0;
 			}
 			else
 			{
 				d = dtVlenSqr(diff);
 			}
-			
+
 			if (d < m_nearestDistanceSqr)
 			{
 				dtVcopy(m_nearestPoint, closestPtPoly);
@@ -682,14 +746,17 @@ public:
 dtFindNearestPolyQuery::~dtFindNearestPolyQuery()
 {
 	// Defined out of line to fix the weak v-tables warning
+	// 定义出线以修复弱 v-tables 警告
 }
 
-/// @par 
+/// @par
 ///
-/// @note If the search box does not intersect any polygons the search will 
-/// return #DT_SUCCESS, but @p nearestRef will be zero. So if in doubt, check 
+/// @note If the search box does not intersect any polygons the search will
+/// return #DT_SUCCESS, but @p nearestRef will be zero. So if in doubt, check
 /// @p nearestRef before using @p nearestPt.
 ///
+/// @note 如果搜索框不与任何多边形相交，搜索将返回#DT_SUCCESS，但@pnearestRef 将为零。
+/// 因此，如果有疑问，请在使用 @pmostlyPt 之前检查 @pnearestRef。
 dtStatus dtNavMeshQuery::findNearestPoly(const float* center, const float* halfExtents,
 										 const dtQueryFilter* filter,
 										 dtPolyRef* nearestRef, float* nearestPt) const
@@ -699,6 +766,9 @@ dtStatus dtNavMeshQuery::findNearestPoly(const float* center, const float* halfE
 
 // If center and nearestPt point to an equal position, isOverPoly will be true;
 // however there's also a special case of climb height inside the polygon (see dtFindNearestPolyQuery)
+//
+// 如果center和nearestPt指向相同的位置，isOverPoly将为true；
+// 然而，多边形内还有一种特殊的爬升高度（请参阅 dtFindNearestPolyQuery）
 dtStatus dtNavMeshQuery::findNearestPoly(const float* center, const float* halfExtents,
 										 const dtQueryFilter* filter,
 										 dtPolyRef* nearestRef, float* nearestPt, bool* isOverPoly) const
@@ -709,7 +779,8 @@ dtStatus dtNavMeshQuery::findNearestPoly(const float* center, const float* halfE
 		return DT_FAILURE | DT_INVALID_PARAM;
 
 	// queryPolygons below will check rest of params
-	
+	// 下面的 queryPolygons 将检查其余参数
+
 	dtFindNearestPolyQuery query(this, center);
 
 	dtStatus status = queryPolygons(center, halfExtents, filter, &query);
@@ -719,13 +790,14 @@ dtStatus dtNavMeshQuery::findNearestPoly(const float* center, const float* halfE
 	*nearestRef = query.nearestRef();
 	// Only override nearestPt if we actually found a poly so the nearest point
 	// is valid.
+	// 仅当我们实际找到多边形时才覆盖最近的点，因此最近的点是有效的。
 	if (nearestPt && *nearestRef)
 	{
 		dtVcopy(nearestPt, query.nearestPoint());
 		if (isOverPoly)
 			*isOverPoly = query.isOverPoly();
 	}
-	
+
 	return DT_SUCCESS;
 }
 
@@ -747,8 +819,10 @@ void dtNavMeshQuery::queryPolygonsInTile(const dtMeshTile* tile, const float* qm
 		const float qfac = tile->header->bvQuantFactor;
 
 		// Calculate quantized box
+		// 计算量化框
 		unsigned short bmin[3], bmax[3];
 		// dtClamp query box to world box.
+		// dtClamp 查询框到世界框。
 		float minx = dtClamp(qmin[0], tbmin[0], tbmax[0]) - tbmin[0];
 		float miny = dtClamp(qmin[1], tbmin[1], tbmax[1]) - tbmin[1];
 		float minz = dtClamp(qmin[2], tbmin[2], tbmax[2]) - tbmin[2];
@@ -764,6 +838,7 @@ void dtNavMeshQuery::queryPolygonsInTile(const dtMeshTile* tile, const float* qm
 		bmax[2] = (unsigned short)(qfac * maxz + 1) | 1;
 
 		// Traverse tree
+		// 遍历树
 		const dtPolyRef base = m_nav->getPolyRefBase(tile);
 		while (node < end)
 		{
@@ -807,13 +882,16 @@ void dtNavMeshQuery::queryPolygonsInTile(const dtMeshTile* tile, const float* qm
 		{
 			dtPoly* p = &tile->polys[i];
 			// Do not return off-mesh connection polygons.
+			// 不要返回off-mesh connection polygons
 			if (p->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 				continue;
 			// Must pass filter
+			// 必须经过过滤器
 			const dtPolyRef ref = base | (dtPolyRef)i;
 			if (!filter->passFilter(ref, tile, p))
 				continue;
 			// Calc polygon bounds.
+			// 计算多边形边界。
 			const float* v = &tile->verts[p->verts[0]*3];
 			dtVcopy(bmin, v);
 			dtVcopy(bmax, v);
@@ -842,6 +920,7 @@ void dtNavMeshQuery::queryPolygonsInTile(const dtMeshTile* tile, const float* qm
 	}
 
 	// Process the last polygons that didn't make a full batch.
+	// 处理未形成完整批次的最后一个多边形。
 	if (n > 0)
 		query->process(tile, polys, polyRefs, n);
 }
@@ -853,9 +932,9 @@ class dtCollectPolysQuery : public dtPolyQuery
 	int m_numCollected;
 	bool m_overflow;
 
-public:
+  public:
 	dtCollectPolysQuery(dtPolyRef* polys, const int maxPolys)
-		: m_polys(polys), m_maxPolys(maxPolys), m_numCollected(0), m_overflow(false)
+			: m_polys(polys), m_maxPolys(maxPolys), m_numCollected(0), m_overflow(false)
 	{
 	}
 
@@ -885,17 +964,22 @@ public:
 dtCollectPolysQuery::~dtCollectPolysQuery()
 {
 	// Defined out of line to fix the weak v-tables warning
+	// 定义出线以修复弱 v-tables 警告
 }
 
-/// @par 
+/// @par
 ///
 /// If no polygons are found, the function will return #DT_SUCCESS with a
 /// @p polyCount of zero.
 ///
-/// If @p polys is too small to hold the entire result set, then the array will 
-/// be filled to capacity. The method of choosing which polygons from the 
+/// If @p polys is too small to hold the entire result set, then the array will
+/// be filled to capacity. The method of choosing which polygons from the
 /// full set are included in the partial result set is undefined.
 ///
+/// 如果未找到多边形，该函数将返回 #DT_SUCCESS，@p polyCount 为零。
+///
+/// 如果 @p polys 太小而无法容纳整个结果集，则数组将被填满。
+/// 从完整集中选择哪些多边形包含在部分结果集中的方法未定义。
 dtStatus dtNavMeshQuery::queryPolygons(const float* center, const float* halfExtents,
 									   const dtQueryFilter* filter,
 									   dtPolyRef* polys, int* polyCount, const int maxPolys) const
@@ -913,13 +997,15 @@ dtStatus dtNavMeshQuery::queryPolygons(const float* center, const float* halfExt
 	return collector.overflowed() ? DT_SUCCESS | DT_BUFFER_TOO_SMALL : DT_SUCCESS;
 }
 
-/// @par 
+/// @par
 ///
 /// The query will be invoked with batches of polygons. Polygons passed
 /// to the query have bounding boxes that overlap with the center and halfExtents
 /// passed to this function. The dtPolyQuery::process function is invoked multiple
 /// times until all overlapping polygons have been processed.
 ///
+/// 将使用批量多边形调用该查询。 传递给查询的多边形具有与传递给该函数的中心和 halfExtents 重叠的边界框。
+/// 多次调用 dtPolyQuery::process 函数，直到处理完所有重叠的多边形。
 dtStatus dtNavMeshQuery::queryPolygons(const float* center, const float* halfExtents,
 									   const dtQueryFilter* filter, dtPolyQuery* query) const
 {
@@ -935,15 +1021,16 @@ dtStatus dtNavMeshQuery::queryPolygons(const float* center, const float* halfExt
 	float bmin[3], bmax[3];
 	dtVsub(bmin, center, halfExtents);
 	dtVadd(bmax, center, halfExtents);
-	
+
 	// Find tiles the query touches.
+	// 查找查询触及的图块。
 	int minx, miny, maxx, maxy;
 	m_nav->calcTileLoc(bmin, &minx, &miny);
 	m_nav->calcTileLoc(bmax, &maxx, &maxy);
 
 	static const int MAX_NEIS = 32;
 	const dtMeshTile* neis[MAX_NEIS];
-	
+
 	for (int y = miny; y <= maxy; ++y)
 	{
 		for (int x = minx; x <= maxx; ++x)
@@ -955,7 +1042,7 @@ dtStatus dtNavMeshQuery::queryPolygons(const float* center, const float* halfExt
 			}
 		}
 	}
-	
+
 	return DT_SUCCESS;
 }
 
@@ -964,12 +1051,15 @@ dtStatus dtNavMeshQuery::queryPolygons(const float* center, const float* halfExt
 /// If the end polygon cannot be reached through the navigation graph,
 /// the last polygon in the path will be the nearest the end polygon.
 ///
-/// If the path array is to small to hold the full result, it will be filled as 
+/// If the path array is to small to hold the full result, it will be filled as
 /// far as possible from the start polygon toward the end polygon.
 ///
-/// The start and end positions are used to calculate traversal costs. 
+/// The start and end positions are used to calculate traversal costs.
 /// (The y-values impact the result.)
 ///
+/// 如果无法通过导航图到达结束多边形，则路径中的最后一个多边形将是最接近结束多边形的。
+/// 如果路径数组太小而无法容纳完整结果，则会从起始多边形到结束多边形尽可能填充路径数组。
+/// 起始位置和结束位置用于计算遍历成本。 （y 值影响结果。）
 dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 								  const float* startPos, const float* endPos,
 								  const dtQueryFilter* filter,
@@ -983,7 +1073,7 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 		return DT_FAILURE | DT_INVALID_PARAM;
 
 	*pathCount = 0;
-	
+
 	// Validate input
 	if (!m_nav->isValidPolyRef(startRef) || !m_nav->isValidPolyRef(endRef) ||
 		!startPos || !dtVisfinite(startPos) ||
@@ -999,10 +1089,10 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 		*pathCount = 1;
 		return DT_SUCCESS;
 	}
-	
+
 	m_nodePool->clear();
 	m_openList->clear();
-	
+
 	dtNode* startNode = m_nodePool->getNode(startRef);
 	dtVcopy(startNode->pos, startPos);
 	startNode->pidx = 0;
@@ -1011,34 +1101,39 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_OPEN;
 	m_openList->push(startNode);
-	
+
 	dtNode* lastBestNode = startNode;
 	float lastBestNodeCost = startNode->total;
-	
+
 	bool outOfNodes = false;
-	
+
 	while (!m_openList->empty())
 	{
 		// Remove node from open list and put it in closed list.
+		// 从打开列表中删除节点并将其放入关闭列表中。
 		dtNode* bestNode = m_openList->pop();
 		bestNode->flags &= ~DT_NODE_OPEN;
 		bestNode->flags |= DT_NODE_CLOSED;
-		
+
 		// Reached the goal, stop searching.
+		// 目的达到了，停止寻找。
 		if (bestNode->id == endRef)
 		{
 			lastBestNode = bestNode;
 			break;
 		}
-		
+
 		// Get current poly and tile.
 		// The API input has been checked already, skip checking internal data.
+		// 获取当前的多边形和tile。
+		// API 输入已被检查，跳过检查内部数据。
 		const dtPolyRef bestRef = bestNode->id;
 		const dtMeshTile* bestTile = 0;
 		const dtPoly* bestPoly = 0;
 		m_nav->getTileAndPolyByRefUnsafe(bestRef, &bestTile, &bestPoly);
-		
+
 		// Get parent poly and tile.
+		// 获取父多边形和瓷砖。
 		dtPolyRef parentRef = 0;
 		const dtMeshTile* parentTile = 0;
 		const dtPoly* parentPoly = 0;
@@ -1046,25 +1141,29 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 			parentRef = m_nodePool->getNodeAtIdx(bestNode->pidx)->id;
 		if (parentRef)
 			m_nav->getTileAndPolyByRefUnsafe(parentRef, &parentTile, &parentPoly);
-		
+
 		for (unsigned int i = bestPoly->firstLink; i != DT_NULL_LINK; i = bestTile->links[i].next)
 		{
 			dtPolyRef neighbourRef = bestTile->links[i].ref;
-			
+
 			// Skip invalid ids and do not expand back to where we came from.
+			// 跳过无效的 id，并且不扩展到我们来自的地方。
 			if (!neighbourRef || neighbourRef == parentRef)
 				continue;
-			
+
 			// Get neighbour poly and tile.
 			// The API input has been checked already, skip checking internal data.
+			// 获取邻居的多边形和tile。
+			// API 输入已被检查，跳过检查内部数据。
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
-			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);			
-			
+			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
+
 			if (!filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
 
 			// deal explicitly with crossing tile boundaries
+			// 明确处理跨越图块边界的问题
 			unsigned char crossSide = 0;
 			if (bestTile->links[i].side != 0xff)
 				crossSide = bestTile->links[i].side >> 1;
@@ -1076,8 +1175,9 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 				outOfNodes = true;
 				continue;
 			}
-			
+
 			// If the node is visited the first time, calculate node position.
+			// 如果该节点是第一次访问，则计算该节点的位置。
 			if (neighbourNode->flags == 0)
 			{
 				getEdgeMidPoint(bestRef, bestPoly, bestTile,
@@ -1086,10 +1186,12 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 			}
 
 			// Calculate cost and heuristic.
+			// 计算成本和启发式。
 			float cost = 0;
 			float heuristic = 0;
-			
+
 			// Special case for last node.
+			// 最后一个节点的特殊情况。
 			if (neighbourRef == endRef)
 			{
 				// Cost
@@ -1101,7 +1203,7 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 													  bestRef, bestTile, bestPoly,
 													  neighbourRef, neighbourTile, neighbourPoly,
 													  0, 0, 0);
-				
+
 				cost = bestNode->cost + curCost + endCost;
 				heuristic = 0;
 			}
@@ -1117,34 +1219,40 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 			}
 
 			const float total = cost + heuristic;
-			
+
 			// The node is already in open list and the new result is worse, skip.
+			// 该节点已在 open list 中，并且新结果更糟，请跳过。
 			if ((neighbourNode->flags & DT_NODE_OPEN) && total >= neighbourNode->total)
 				continue;
 			// The node is already visited and process, and the new result is worse, skip.
+			// 该节点已经被访问并处理过，新的结果更差，跳过。
 			if ((neighbourNode->flags & DT_NODE_CLOSED) && total >= neighbourNode->total)
 				continue;
-			
+
 			// Add or update the node.
+			// 添加或更新节点。
 			neighbourNode->pidx = m_nodePool->getNodeIdx(bestNode);
 			neighbourNode->id = neighbourRef;
 			neighbourNode->flags = (neighbourNode->flags & ~DT_NODE_CLOSED);
 			neighbourNode->cost = cost;
 			neighbourNode->total = total;
-			
+
 			if (neighbourNode->flags & DT_NODE_OPEN)
 			{
 				// Already in open, update node location.
+				// 已处于打开状态，更新节点位置。
 				m_openList->modify(neighbourNode);
 			}
 			else
 			{
 				// Put the node in open list.
+				// 将节点放入 open 列表中。
 				neighbourNode->flags |= DT_NODE_OPEN;
 				m_openList->push(neighbourNode);
 			}
-			
+
 			// Update nearest node to target so far.
+			// 更新到目前为止距离目标最近的节点。
 			if (heuristic < lastBestNodeCost)
 			{
 				lastBestNodeCost = heuristic;
@@ -1160,13 +1268,14 @@ dtStatus dtNavMeshQuery::findPath(dtPolyRef startRef, dtPolyRef endRef,
 
 	if (outOfNodes)
 		status |= DT_OUT_OF_NODES;
-	
+
 	return status;
 }
 
 dtStatus dtNavMeshQuery::getPathToNode(dtNode* endNode, dtPolyRef* path, int* pathCount, int maxPath) const
 {
 	// Find the length of the entire path.
+	// 求整个路径的长度。
 	dtNode* curNode = endNode;
 	int length = 0;
 	do
@@ -1176,6 +1285,7 @@ dtStatus dtNavMeshQuery::getPathToNode(dtNode* endNode, dtPolyRef* path, int* pa
 	} while (curNode);
 
 	// If the path cannot be fully stored then advance to the last node we will be able to store.
+	// 如果路径无法完全存储，则前进到我们能够存储的最后一个节点。
 	curNode = endNode;
 	int writeCount;
 	for (writeCount = length; writeCount > maxPath; writeCount--)
@@ -1207,11 +1317,16 @@ dtStatus dtNavMeshQuery::getPathToNode(dtNode* endNode, dtPolyRef* path, int* pa
 
 /// @par
 ///
-/// @warning Calling any non-slice methods before calling finalizeSlicedFindPath() 
+/// @warning Calling any non-slice methods before calling finalizeSlicedFindPath()
 /// or finalizeSlicedFindPathPartial() may result in corrupted data!
 ///
 /// The @p filter pointer is stored and used for the duration of the sliced
 /// path query.
+///
+/// @warning 在调用 FinalizeSlicedFindPath() 或 FinalizeSlicedFindPathPartial()
+/// 之前调用任何非切片方法可能会导致数据损坏！
+///
+/// @p 过滤器指针在切片路径查询期间被存储和使用。
 ///
 dtStatus dtNavMeshQuery::initSlicedFindPath(dtPolyRef startRef, dtPolyRef endRef,
 											const float* startPos, const float* endPos,
@@ -1233,7 +1348,7 @@ dtStatus dtNavMeshQuery::initSlicedFindPath(dtPolyRef startRef, dtPolyRef endRef
 	m_query.filter = filter;
 	m_query.options = options;
 	m_query.raycastLimitSqr = FLT_MAX;
-	
+
 	// Validate input
 	if (!m_nav->isValidPolyRef(startRef) || !m_nav->isValidPolyRef(endRef) ||
 		!startPos || !dtVisfinite(startPos) ||
@@ -1243,10 +1358,12 @@ dtStatus dtNavMeshQuery::initSlicedFindPath(dtPolyRef startRef, dtPolyRef endRef
 	}
 
 	// trade quality with performance?
+	// 用性能来交换质量？
 	if (options & DT_FINDPATH_ANY_ANGLE)
 	{
-		// limiting to several times the character radius yields nice results. It is not sensitive 
+		// limiting to several times the character radius yields nice results. It is not sensitive
 		// so it is enough to compute it from the first tile.
+		// 限制为字符半径的几倍会产生很好的结果。 它不敏感，因此从第一个图块开始计算就足够了。
 		const dtMeshTile* tile = m_nav->getTileByRef(startRef);
 		float agentRadius = tile->header->walkableRadius;
 		m_query.raycastLimitSqr = dtSqr(agentRadius * DT_RAY_CAST_LIMIT_PROPORTIONS);
@@ -1257,10 +1374,10 @@ dtStatus dtNavMeshQuery::initSlicedFindPath(dtPolyRef startRef, dtPolyRef endRef
 		m_query.status = DT_SUCCESS;
 		return DT_SUCCESS;
 	}
-	
+
 	m_nodePool->clear();
 	m_openList->clear();
-	
+
 	dtNode* startNode = m_nodePool->getNode(startRef);
 	dtVcopy(startNode->pos, startPos);
 	startNode->pidx = 0;
@@ -1269,20 +1386,21 @@ dtStatus dtNavMeshQuery::initSlicedFindPath(dtPolyRef startRef, dtPolyRef endRef
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_OPEN;
 	m_openList->push(startNode);
-	
+
 	m_query.status = DT_IN_PROGRESS;
 	m_query.lastBestNode = startNode;
 	m_query.lastBestNodeCost = startNode->total;
-	
+
 	return m_query.status;
 }
-	
+
 dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 {
 	if (!dtStatusInProgress(m_query.status))
 		return m_query.status;
 
 	// Make sure the request is still valid.
+	// 确保请求仍然有效。
 	if (!m_nav->isValidPolyRef(m_query.startRef) || !m_nav->isValidPolyRef(m_query.endRef))
 	{
 		m_query.status = DT_FAILURE;
@@ -1291,18 +1409,20 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 
 	dtRaycastHit rayHit;
 	rayHit.maxPath = 0;
-		
+
 	int iter = 0;
 	while (iter < maxIter && !m_openList->empty())
 	{
 		iter++;
-		
+
 		// Remove node from open list and put it in closed list.
+		// 从打开列表中删除节点并将其放入关闭列表中。
 		dtNode* bestNode = m_openList->pop();
 		bestNode->flags &= ~DT_NODE_OPEN;
 		bestNode->flags |= DT_NODE_CLOSED;
-		
+
 		// Reached the goal, stop searching.
+		// 目的达到了，停止寻找。
 		if (bestNode->id == m_query.endRef)
 		{
 			m_query.lastBestNode = bestNode;
@@ -1312,22 +1432,26 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 				*doneIters = iter;
 			return m_query.status;
 		}
-		
+
 		// Get current poly and tile.
 		// The API input has been checked already, skip checking internal data.
+		// 获取当前的多边形和tile。
+		// API 输入已被检查，跳过检查内部数据。
 		const dtPolyRef bestRef = bestNode->id;
 		const dtMeshTile* bestTile = 0;
 		const dtPoly* bestPoly = 0;
 		if (dtStatusFailed(m_nav->getTileAndPolyByRef(bestRef, &bestTile, &bestPoly)))
 		{
 			// The polygon has disappeared during the sliced query, fail.
+			// 切片查询期间多边形消失，失败。
 			m_query.status = DT_FAILURE;
 			if (doneIters)
 				*doneIters = iter;
 			return m_query.status;
 		}
-		
+
 		// Get parent and grand parent poly and tile.
+		// 获取父级和祖级多边形和tile。
 		dtPolyRef parentRef = 0, grandpaRef = 0;
 		const dtMeshTile* parentTile = 0;
 		const dtPoly* parentPoly = 0;
@@ -1345,6 +1469,7 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 			if (invalidParent || (grandpaRef && !m_nav->isValidPolyRef(grandpaRef)) )
 			{
 				// The polygon has disappeared during the sliced query, fail.
+				// 切片查询期间多边形消失，失败。
 				m_query.status = DT_FAILURE;
 				if (doneIters)
 					*doneIters = iter;
@@ -1353,54 +1478,62 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 		}
 
 		// decide whether to test raycast to previous nodes
+		// 决定是否测试光线投射到先前的节点
 		bool tryLOS = false;
 		if (m_query.options & DT_FINDPATH_ANY_ANGLE)
 		{
 			if ((parentRef != 0) && (dtVdistSqr(parentNode->pos, bestNode->pos) < m_query.raycastLimitSqr))
 				tryLOS = true;
 		}
-		
+
 		for (unsigned int i = bestPoly->firstLink; i != DT_NULL_LINK; i = bestTile->links[i].next)
 		{
 			dtPolyRef neighbourRef = bestTile->links[i].ref;
-			
+
 			// Skip invalid ids and do not expand back to where we came from.
+			// 跳过无效的 id，并且不扩展到我们来自的地方。
 			if (!neighbourRef || neighbourRef == parentRef)
 				continue;
-			
+
 			// Get neighbour poly and tile.
 			// The API input has been checked already, skip checking internal data.
+			// 获取邻居的多边形和tile。
+			// API 输入已被检查，跳过检查内部数据。
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
-			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);			
-			
+			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
+
 			if (!m_query.filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
-			
+
 			// get the neighbor node
+			// 获取邻居节点
 			dtNode* neighbourNode = m_nodePool->getNode(neighbourRef, 0);
 			if (!neighbourNode)
 			{
 				m_query.status |= DT_OUT_OF_NODES;
 				continue;
 			}
-			
+
 			// do not expand to nodes that were already visited from the same parent
+			// 不要扩展到已从同一父级访问过的节点
 			if (neighbourNode->pidx != 0 && neighbourNode->pidx == bestNode->pidx)
 				continue;
 
 			// If the node is visited the first time, calculate node position.
+			// 如果该节点是第一次访问，则计算该节点的位置。
 			if (neighbourNode->flags == 0)
 			{
 				getEdgeMidPoint(bestRef, bestPoly, bestTile,
 								neighbourRef, neighbourPoly, neighbourTile,
 								neighbourNode->pos);
 			}
-			
+
 			// Calculate cost and heuristic.
+			// 计算成本和启发式。
 			float cost = 0;
 			float heuristic = 0;
-			
+
 			// raycast parent
 			bool foundShortCut = false;
 			rayHit.pathCost = rayHit.t = 0;
@@ -1414,6 +1547,7 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 			if (foundShortCut)
 			{
 				// shortcut found using raycast. Using shorter cost instead
+				// 使用光线投射找到的快捷方式。 使用更短的成本代替
 				cost = parentNode->cost + rayHit.pathCost;
 			}
 			else
@@ -1421,19 +1555,20 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 				// No shortcut found.
 				const float curCost = m_query.filter->getCost(bestNode->pos, neighbourNode->pos,
 															  parentRef, parentTile, parentPoly,
-															bestRef, bestTile, bestPoly,
-															neighbourRef, neighbourTile, neighbourPoly);
+															  bestRef, bestTile, bestPoly,
+															  neighbourRef, neighbourTile, neighbourPoly);
 				cost = bestNode->cost + curCost;
 			}
 
 			// Special case for last node.
+			// 最后一个节点的特殊情况。
 			if (neighbourRef == m_query.endRef)
 			{
 				const float endCost = m_query.filter->getCost(neighbourNode->pos, m_query.endPos,
 															  bestRef, bestTile, bestPoly,
 															  neighbourRef, neighbourTile, neighbourPoly,
 															  0, 0, 0);
-				
+
 				cost = cost + endCost;
 				heuristic = 0;
 			}
@@ -1441,17 +1576,20 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 			{
 				heuristic = dtVdist(neighbourNode->pos, m_query.endPos)*H_SCALE;
 			}
-			
+
 			const float total = cost + heuristic;
-			
+
 			// The node is already in open list and the new result is worse, skip.
+			// 该节点已在 open list 中，并且新结果更糟，请跳过。
 			if ((neighbourNode->flags & DT_NODE_OPEN) && total >= neighbourNode->total)
 				continue;
 			// The node is already visited and process, and the new result is worse, skip.
+			// 该节点已经被访问并处理过，新的结果更差，跳过。
 			if ((neighbourNode->flags & DT_NODE_CLOSED) && total >= neighbourNode->total)
 				continue;
-			
+
 			// Add or update the node.
+			// 添加或更新节点
 			neighbourNode->pidx = foundShortCut ? bestNode->pidx : m_nodePool->getNodeIdx(bestNode);
 			neighbourNode->id = neighbourRef;
 			neighbourNode->flags = (neighbourNode->flags & ~(DT_NODE_CLOSED | DT_NODE_PARENT_DETACHED));
@@ -1459,20 +1597,23 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 			neighbourNode->total = total;
 			if (foundShortCut)
 				neighbourNode->flags = (neighbourNode->flags | DT_NODE_PARENT_DETACHED);
-			
+
 			if (neighbourNode->flags & DT_NODE_OPEN)
 			{
 				// Already in open, update node location.
+				// 已处于打开状态，更新节点位置。
 				m_openList->modify(neighbourNode);
 			}
 			else
 			{
 				// Put the node in open list.
+				// 将节点放入 open 列表中。
 				neighbourNode->flags |= DT_NODE_OPEN;
 				m_openList->push(neighbourNode);
 			}
-			
+
 			// Update nearest node to target so far.
+			// 更新到目前为止距离目标最近的节点。
 			if (heuristic < m_query.lastBestNodeCost)
 			{
 				m_query.lastBestNodeCost = heuristic;
@@ -1480,8 +1621,9 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 			}
 		}
 	}
-	
+
 	// Exhausted all nodes, but could not find path.
+	// 耗尽所有节点，但找不到路径。
 	if (m_openList->empty())
 	{
 		const dtStatus details = m_query.status & DT_STATUS_DETAIL_MASK;
@@ -1494,6 +1636,7 @@ dtStatus dtNavMeshQuery::updateSlicedFindPath(const int maxIter, int* doneIters)
 	return m_query.status;
 }
 
+/// 最终确定并返回切片路径查询的结果。
 dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount, const int maxPath)
 {
 	if (!pathCount)
@@ -1503,7 +1646,7 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount,
 
 	if (!path || maxPath <= 0)
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	if (dtStatusFailed(m_query.status))
 	{
 		// Reset query.
@@ -1516,16 +1659,18 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount,
 	if (m_query.startRef == m_query.endRef)
 	{
 		// Special case: the search starts and ends at same poly.
+		// 特殊处理：搜索开始的多边形和结束多边形是同一个多边形
 		path[n++] = m_query.startRef;
 	}
 	else
 	{
 		// Reverse the path.
+		// 反转路径。
 		dtAssert(m_query.lastBestNode);
-		
+
 		if (m_query.lastBestNode->id != m_query.endRef)
 			m_query.status |= DT_PARTIAL_RESULT;
-		
+
 		dtNode* prev = 0;
 		dtNode* node = m_query.lastBestNode;
 		int prevRay = 0;
@@ -1534,13 +1679,17 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount,
 			dtNode* next = m_nodePool->getNodeAtIdx(node->pidx);
 			node->pidx = m_nodePool->getNodeIdx(prev);
 			prev = node;
-			int nextRay = node->flags & DT_NODE_PARENT_DETACHED; // keep track of whether parent is not adjacent (i.e. due to raycast shortcut)
-			node->flags = (node->flags & ~DT_NODE_PARENT_DETACHED) | prevRay; // and store it in the reversed path's node
+			// keep track of whether parent is not adjacent (i.e. due to raycast shortcut)
+			// 跟踪父级是否不相邻（即由于光线投射快捷方式）
+			int nextRay = node->flags & DT_NODE_PARENT_DETACHED;
+			// and store it in the reversed path's node
+			// 并将其存储在反向路径的节点中
+			node->flags = (node->flags & ~DT_NODE_PARENT_DETACHED) | prevRay;
 			prevRay = nextRay;
 			node = next;
 		}
 		while (node);
-		
+
 		// Store path
 		node = prev;
 		do
@@ -1554,8 +1703,12 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount,
 				status = raycast(node->id, node->pos, next->pos, m_query.filter, &t, normal, path+n, &m, maxPath-n);
 				n += m;
 				// raycast ends on poly boundary and the path might include the next poly boundary.
-				if (path[n-1] == next->id)
-					n--; // remove to avoid duplicates
+				// 光线投射在多边形边界上结束，并且路径可能包括下一个多边形边界。
+				if (path[n-1] == next->id) {
+					// remove to avoid duplicates
+					// 删除以避免重复
+					n--;
+				}
 			}
 			else
 			{
@@ -1573,17 +1726,18 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPath(dtPolyRef* path, int* pathCount,
 		}
 		while (node);
 	}
-	
+
 	const dtStatus details = m_query.status & DT_STATUS_DETAIL_MASK;
 
 	// Reset query.
 	memset(&m_query, 0, sizeof(dtQueryData));
-	
+
 	*pathCount = n;
-	
+
 	return DT_SUCCESS | details;
 }
 
+/// 最终确定并返回不完整切片路径查询的结果，返回搜索期间访问的现有路径上最远多边形的路径。
 dtStatus dtNavMeshQuery::finalizeSlicedFindPathPartial(const dtPolyRef* existing, const int existingSize,
 													   dtPolyRef* path, int* pathCount, const int maxPath)
 {
@@ -1594,24 +1748,26 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPathPartial(const dtPolyRef* existing
 
 	if (!existing || existingSize <= 0 || !path || !pathCount || maxPath <= 0)
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	if (dtStatusFailed(m_query.status))
 	{
 		// Reset query.
 		memset(&m_query, 0, sizeof(dtQueryData));
 		return DT_FAILURE;
 	}
-	
+
 	int n = 0;
-	
+
 	if (m_query.startRef == m_query.endRef)
 	{
 		// Special case: the search starts and ends at same poly.
+		// 特殊情况：搜索在同一多边形处开始和结束。
 		path[n++] = m_query.startRef;
 	}
 	else
 	{
 		// Find furthest existing node that was visited.
+		// 查找访问过的最远的现有节点。
 		dtNode* prev = 0;
 		dtNode* node = 0;
 		for (int i = existingSize-1; i >= 0; --i)
@@ -1620,14 +1776,14 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPathPartial(const dtPolyRef* existing
 			if (node)
 				break;
 		}
-		
+
 		if (!node)
 		{
 			m_query.status |= DT_PARTIAL_RESULT;
 			dtAssert(m_query.lastBestNode);
 			node = m_query.lastBestNode;
 		}
-		
+
 		// Reverse the path.
 		int prevRay = 0;
 		do
@@ -1635,13 +1791,17 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPathPartial(const dtPolyRef* existing
 			dtNode* next = m_nodePool->getNodeAtIdx(node->pidx);
 			node->pidx = m_nodePool->getNodeIdx(prev);
 			prev = node;
-			int nextRay = node->flags & DT_NODE_PARENT_DETACHED; // keep track of whether parent is not adjacent (i.e. due to raycast shortcut)
-			node->flags = (node->flags & ~DT_NODE_PARENT_DETACHED) | prevRay; // and store it in the reversed path's node
+			// keep track of whether parent is not adjacent (i.e. due to raycast shortcut)
+			// 跟踪父级是否不相邻（即由于光线投射快捷方式）
+			int nextRay = node->flags & DT_NODE_PARENT_DETACHED;
+			// and store it in the reversed path's node
+			// 并将其存储在反向路径的节点中
+			node->flags = (node->flags & ~DT_NODE_PARENT_DETACHED) | prevRay;
 			prevRay = nextRay;
 			node = next;
 		}
 		while (node);
-		
+
 		// Store path
 		node = prev;
 		do
@@ -1655,8 +1815,12 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPathPartial(const dtPolyRef* existing
 				status = raycast(node->id, node->pos, next->pos, m_query.filter, &t, normal, path+n, &m, maxPath-n);
 				n += m;
 				// raycast ends on poly boundary and the path might include the next poly boundary.
-				if (path[n-1] == next->id)
-					n--; // remove to avoid duplicates
+				// 光线投射在多边形边界上结束，并且路径可能包括下一个多边形边界。
+				if (path[n-1] == next->id) {
+					// remove to avoid duplicates
+					// 删除以避免重复
+					n--;
+				}
 			}
 			else
 			{
@@ -1674,14 +1838,14 @@ dtStatus dtNavMeshQuery::finalizeSlicedFindPathPartial(const dtPolyRef* existing
 		}
 		while (node);
 	}
-	
+
 	const dtStatus details = m_query.status & DT_STATUS_DETAIL_MASK;
 
 	// Reset query.
 	memset(&m_query, 0, sizeof(dtQueryData));
-	
+
 	*pathCount = n;
-	
+
 	return DT_SUCCESS | details;
 }
 
@@ -1693,6 +1857,7 @@ dtStatus dtNavMeshQuery::appendVertex(const float* pos, const unsigned char flag
 	if ((*straightPathCount) > 0 && dtVequal(&straightPath[((*straightPathCount)-1)*3], pos))
 	{
 		// The vertices are equal, update flags and poly.
+		// 顶点相等，更新标志和多边形。
 		if (straightPathFlags)
 			straightPathFlags[(*straightPathCount)-1] = flags;
 		if (straightPathRefs)
@@ -1709,6 +1874,7 @@ dtStatus dtNavMeshQuery::appendVertex(const float* pos, const unsigned char flag
 		(*straightPathCount)++;
 
 		// If there is no space to append more vertices, return.
+		// 如果没有空间追加更多顶点，则返回。
 		if ((*straightPathCount) >= maxStraightPath)
 		{
 			return DT_SUCCESS | DT_BUFFER_TOO_SMALL;
@@ -1738,24 +1904,25 @@ dtStatus dtNavMeshQuery::appendPortals(const int startIdx, const int endIdx, con
 		const dtPoly* fromPoly = 0;
 		if (dtStatusFailed(m_nav->getTileAndPolyByRef(from, &fromTile, &fromPoly)))
 			return DT_FAILURE | DT_INVALID_PARAM;
-		
+
 		const dtPolyRef to = path[i+1];
 		const dtMeshTile* toTile = 0;
 		const dtPoly* toPoly = 0;
 		if (dtStatusFailed(m_nav->getTileAndPolyByRef(to, &toTile, &toPoly)))
 			return DT_FAILURE | DT_INVALID_PARAM;
-		
+
 		float left[3], right[3];
 		if (dtStatusFailed(getPortalPoints(from, fromPoly, fromTile, to, toPoly, toTile, left, right)))
 			break;
-	
+
 		if (options & DT_STRAIGHTPATH_AREA_CROSSINGS)
 		{
 			// Skip intersection if only area crossings are requested.
+			// 如果仅请求区域交叉口，则跳过交叉路口。
 			if (fromPoly->getArea() == toPoly->getArea())
 				continue;
 		}
-		
+
 		// Append intersection
 		float s,t;
 		if (dtIntersectSegSeg2D(startPos, endPos, left, right, s, t))
@@ -1774,22 +1941,31 @@ dtStatus dtNavMeshQuery::appendPortals(const int startIdx, const int endIdx, con
 }
 
 /// @par
-/// 
+///
 /// This method peforms what is often called 'string pulling'.
 ///
-/// The start position is clamped to the first polygon in the path, and the 
-/// end position is clamped to the last. So the start and end positions should 
+/// The start position is clamped to the first polygon in the path, and the
+/// end position is clamped to the last. So the start and end positions should
 /// normally be within or very near the first and last polygons respectively.
 ///
-/// The returned polygon references represent the reference id of the polygon 
-/// that is entered at the associated path position. The reference id associated 
-/// with the end point will always be zero.  This allows, for example, matching 
+/// The returned polygon references represent the reference id of the polygon
+/// that is entered at the associated path position. The reference id associated
+/// with the end point will always be zero.  This allows, for example, matching
 /// off-mesh link points to their representative polygons.
 ///
-/// If the provided result buffers are too small for the entire result set, 
-/// they will be filled as far as possible from the start toward the end 
+/// If the provided result buffers are too small for the entire result set,
+/// they will be filled as far as possible from the start toward the end
 /// position.
+
+/// 这种方法执行通常称为“拉线”的操作。
 ///
+/// 起始位置被clamped到路径中的第一个多边形，并且位置被clamped到最后一个。
+/// 因此，起始位置和结束位置通常应分别位于第一个和最后一个多边形内或非常接近。
+///
+/// 返回的多边形引用表示在关联路径位置输入的多边形的引用 ID。 与终点关联的参考 ID 始终为零。
+/// 例如，这允许将离网格链接点与其代表性多边形相匹配。
+///
+/// 如果提供的结果缓冲区对于整个结果集来说太小，则将从开始位置到结束位置尽可能地填充它们。
 dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* endPos,
 										  const dtPolyRef* path, const int pathSize,
 										  float* straightPath, unsigned char* straightPathFlags, dtPolyRef* straightPathRefs,
@@ -1809,9 +1985,9 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	dtStatus stat = 0;
-	
+
 	// TODO: Should this be callers responsibility?
 	float closestStartPos[3];
 	if (dtStatusFailed(closestPointOnPolyBoundary(path[0], startPos, closestStartPos)))
@@ -1820,14 +1996,14 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 	float closestEndPos[3];
 	if (dtStatusFailed(closestPointOnPolyBoundary(path[pathSize-1], endPos, closestEndPos)))
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	// Add start point.
 	stat = appendVertex(closestStartPos, DT_STRAIGHTPATH_START, path[0],
 						straightPath, straightPathFlags, straightPathRefs,
 						straightPathCount, maxStraightPath);
 	if (stat != DT_IN_PROGRESS)
 		return stat;
-	
+
 	if (pathSize > 1)
 	{
 		float portalApex[3], portalLeft[3], portalRight[3];
@@ -1837,18 +2013,18 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 		int apexIndex = 0;
 		int leftIndex = 0;
 		int rightIndex = 0;
-		
+
 		unsigned char leftPolyType = 0;
 		unsigned char rightPolyType = 0;
-		
+
 		dtPolyRef leftPolyRef = path[0];
 		dtPolyRef rightPolyRef = path[0];
-		
+
 		for (int i = 0; i < pathSize; ++i)
 		{
 			float left[3], right[3];
 			unsigned char toType;
-			
+
 			if (i+1 < pathSize)
 			{
 				unsigned char fromType; // fromType is ignored.
@@ -1858,7 +2034,10 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 				{
 					// Failed to get portal points, in practice this means that path[i+1] is invalid polygon.
 					// Clamp the end point to path[i], and return the path so far.
-					
+
+					// 无法获取入口点，实际上这意味着路径[i+1]是无效的多边形。
+					// 将终点clamp到path[i]，并返回到目前为止的路径。
+
 					if (dtStatusFailed(closestPointOnPolyBoundary(path[i], endPos, closestEndPos)))
 					{
 						// This should only happen when the first polygon is invalid.
@@ -1866,23 +2045,27 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 					}
 
 					// Apeend portals along the current straight path segment.
+					// 沿当前直线路径段追加端口。
 					if (options & (DT_STRAIGHTPATH_AREA_CROSSINGS | DT_STRAIGHTPATH_ALL_CROSSINGS))
 					{
 						// Ignore status return value as we're just about to return anyway.
+						// 忽略状态返回值，因为我们即将返回。
 						appendPortals(apexIndex, i, closestEndPos, path,
-											 straightPath, straightPathFlags, straightPathRefs,
-											 straightPathCount, maxStraightPath, options);
+									  straightPath, straightPathFlags, straightPathRefs,
+									  straightPathCount, maxStraightPath, options);
 					}
 
 					// Ignore status return value as we're just about to return anyway.
+					// 忽略状态返回值，因为我们即将返回。
 					appendVertex(closestEndPos, 0, path[i],
-										straightPath, straightPathFlags, straightPathRefs,
-										straightPathCount, maxStraightPath);
-					
+								 straightPath, straightPathFlags, straightPathRefs,
+								 straightPathCount, maxStraightPath);
+
 					return DT_SUCCESS | DT_PARTIAL_RESULT | ((*straightPathCount >= maxStraightPath) ? DT_BUFFER_TOO_SMALL : 0);
 				}
-				
+
 				// If starting really close the portal, advance.
+				// 如果开始时确实关闭了传送门，请前进。
 				if (i == 0)
 				{
 					float t;
@@ -1895,10 +2078,10 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 				// End of the path.
 				dtVcopy(left, closestEndPos);
 				dtVcopy(right, closestEndPos);
-				
+
 				toType = DT_POLYTYPE_GROUND;
 			}
-			
+
 			// Right vertex.
 			if (dtTriArea2D(portalApex, portalRight, right) <= 0.0f)
 			{
@@ -1912,44 +2095,45 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 				else
 				{
 					// Append portals along the current straight path segment.
+					// 沿着当前直线路径段追加入口。
 					if (options & (DT_STRAIGHTPATH_AREA_CROSSINGS | DT_STRAIGHTPATH_ALL_CROSSINGS))
 					{
 						stat = appendPortals(apexIndex, leftIndex, portalLeft, path,
 											 straightPath, straightPathFlags, straightPathRefs,
 											 straightPathCount, maxStraightPath, options);
 						if (stat != DT_IN_PROGRESS)
-							return stat;					
+							return stat;
 					}
-				
+
 					dtVcopy(portalApex, portalLeft);
 					apexIndex = leftIndex;
-					
+
 					unsigned char flags = 0;
 					if (!leftPolyRef)
 						flags = DT_STRAIGHTPATH_END;
 					else if (leftPolyType == DT_POLYTYPE_OFFMESH_CONNECTION)
 						flags = DT_STRAIGHTPATH_OFFMESH_CONNECTION;
 					dtPolyRef ref = leftPolyRef;
-					
+
 					// Append or update vertex
 					stat = appendVertex(portalApex, flags, ref,
 										straightPath, straightPathFlags, straightPathRefs,
 										straightPathCount, maxStraightPath);
 					if (stat != DT_IN_PROGRESS)
 						return stat;
-					
+
 					dtVcopy(portalLeft, portalApex);
 					dtVcopy(portalRight, portalApex);
 					leftIndex = apexIndex;
 					rightIndex = apexIndex;
-					
+
 					// Restart
 					i = apexIndex;
-					
+
 					continue;
 				}
 			}
-			
+
 			// Left vertex.
 			if (dtTriArea2D(portalApex, portalLeft, left) >= 0.0f)
 			{
@@ -1974,7 +2158,7 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 
 					dtVcopy(portalApex, portalRight);
 					apexIndex = rightIndex;
-					
+
 					unsigned char flags = 0;
 					if (!rightPolyRef)
 						flags = DT_STRAIGHTPATH_END;
@@ -1988,21 +2172,22 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 										straightPathCount, maxStraightPath);
 					if (stat != DT_IN_PROGRESS)
 						return stat;
-					
+
 					dtVcopy(portalLeft, portalApex);
 					dtVcopy(portalRight, portalApex);
 					leftIndex = apexIndex;
 					rightIndex = apexIndex;
-					
+
 					// Restart
 					i = apexIndex;
-					
+
 					continue;
 				}
 			}
 		}
 
 		// Append portals along the current straight path segment.
+		// 沿着当前直线路径段追加入口。
 		if (options & (DT_STRAIGHTPATH_AREA_CROSSINGS | DT_STRAIGHTPATH_ALL_CROSSINGS))
 		{
 			stat = appendPortals(apexIndex, pathSize-1, closestEndPos, path,
@@ -2013,34 +2198,43 @@ dtStatus dtNavMeshQuery::findStraightPath(const float* startPos, const float* en
 		}
 	}
 
-	// Ignore status return value as we're just about to return anyway.
+	// 忽略状态返回值，因为我们即将返回。
 	appendVertex(closestEndPos, DT_STRAIGHTPATH_END, 0,
 						straightPath, straightPathFlags, straightPathRefs,
 						straightPathCount, maxStraightPath);
-	
+
 	return DT_SUCCESS | ((*straightPathCount >= maxStraightPath) ? DT_BUFFER_TOO_SMALL : 0);
 }
 
 /// @par
 ///
-/// This method is optimized for small delta movement and a small number of 
-/// polygons. If used for too great a distance, the result set will form an 
+/// This method is optimized for small delta movement and a small number of
+/// polygons. If used for too great a distance, the result set will form an
 /// incomplete path.
 ///
-/// @p resultPos will equal the @p endPos if the end is reached. 
+/// @p resultPos will equal the @p endPos if the end is reached.
 /// Otherwise the closest reachable position will be returned.
-/// 
-/// @p resultPos is not projected onto the surface of the navigation 
+///
+/// @p resultPos is not projected onto the surface of the navigation
 /// mesh. Use #getPolyHeight if this is needed.
 ///
-/// This method treats the end position in the same manner as 
-/// the #raycast method. (As a 2D point.) See that method's documentation 
+/// This method treats the end position in the same manner as
+/// the #raycast method. (As a 2D point.) See that method's documentation
 /// for details.
-/// 
-/// If the @p visited array is too small to hold the entire result set, it will 
-/// be filled as far as possible from the start position toward the end 
+///
+/// If the @p visited array is too small to hold the entire result set, it will
+/// be filled as far as possible from the start position toward the end
 /// position.
 ///
+/// 此方法针对小增量运动和少量多边形进行了优化。 如果使用距离太远，结果集将形成不完整的路径。
+///
+/// 如果到达末尾，@p resultPos 将等于 @p endPos。 否则将返回最近的可到达位置。
+///
+/// @p resultPos 不会投影到导航网格的表面上。 如果需要，请使用#getPolyHeight。
+///
+/// 此方法以与 #raycast 方法相同的方式处理结束位置。 （作为 2D 点。）有关详细信息，请参阅该方法的文档。
+///
+/// 如果@p访问数组太小而无法容纳整个结果集，则会从开始位置向结束位置尽可能填充。
 dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* startPos, const float* endPos,
 										  const dtQueryFilter* filter,
 										  float* resultPos, dtPolyRef* visited, int* visitedCount, const int maxVisitedSize) const
@@ -2061,15 +2255,15 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	dtStatus status = DT_SUCCESS;
-	
+
 	static const int MAX_STACK = 48;
 	dtNode* stack[MAX_STACK];
 	int nstack = 0;
-	
+
 	m_tinyNodePool->clear();
-	
+
 	dtNode* startNode = m_tinyNodePool->getNode(startRef);
 	startNode->pidx = 0;
 	startNode->cost = 0;
@@ -2077,19 +2271,19 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_CLOSED;
 	stack[nstack++] = startNode;
-	
+
 	float bestPos[3];
 	float bestDist = FLT_MAX;
 	dtNode* bestNode = 0;
 	dtVcopy(bestPos, startPos);
-	
+
 	// Search constraints
 	float searchPos[3], searchRadSqr;
 	dtVlerp(searchPos, startPos, endPos, 0.5f);
 	searchRadSqr = dtSqr(dtVdist(startPos, endPos)/2.0f + 0.001f);
-	
+
 	float verts[DT_VERTS_PER_POLYGON*3];
-	
+
 	while (nstack)
 	{
 		// Pop front.
@@ -2097,19 +2291,20 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 		for (int i = 0; i < nstack-1; ++i)
 			stack[i] = stack[i+1];
 		nstack--;
-		
+
 		// Get poly and tile.
 		// The API input has been checked already, skip checking internal data.
+		// 获取poly和tile。 API 输入已被检查，跳过检查内部数据。
 		const dtPolyRef curRef = curNode->id;
 		const dtMeshTile* curTile = 0;
 		const dtPoly* curPoly = 0;
-		m_nav->getTileAndPolyByRefUnsafe(curRef, &curTile, &curPoly);			
-		
+		m_nav->getTileAndPolyByRefUnsafe(curRef, &curTile, &curPoly);
+
 		// Collect vertices.
 		const int nverts = curPoly->vertCount;
 		for (int i = 0; i < nverts; ++i)
 			dtVcopy(&verts[i*3], &curTile->verts[curPoly->verts[i]*3]);
-		
+
 		// If target is inside the poly, stop search.
 		if (dtPointInPolygon(endPos, verts, nverts))
 		{
@@ -2117,15 +2312,17 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 			dtVcopy(bestPos, endPos);
 			break;
 		}
-		
+
 		// Find wall edges and find nearest point inside the walls.
+		// 找到墙边缘并找到墙内最近的点。
 		for (int i = 0, j = (int)curPoly->vertCount-1; i < (int)curPoly->vertCount; j = i++)
 		{
 			// Find links to neighbours.
+			// 寻找邻居的链接。
 			static const int MAX_NEIS = 8;
 			int nneis = 0;
 			dtPolyRef neis[MAX_NEIS];
-			
+
 			if (curPoly->neis[j] & DT_EXT_LINK)
 			{
 				// Tile border.
@@ -2158,7 +2355,7 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 					neis[nneis++] = ref;
 				}
 			}
-			
+
 			if (!nneis)
 			{
 				// Wall edge, calc distance.
@@ -2185,7 +2382,7 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 					// Skip if already visited.
 					if (neighbourNode->flags & DT_NODE_CLOSED)
 						continue;
-					
+
 					// Skip the link if it is too far from search constraint.
 					// TODO: Maybe should use getPortalPoints(), but this one is way faster.
 					const float* vj = &verts[j*3];
@@ -2194,7 +2391,7 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 					float distSqr = dtDistancePtSegSqr2D(searchPos, vj, vi, tseg);
 					if (distSqr > searchRadSqr)
 						continue;
-					
+
 					// Mark as the node as visited and push to queue.
 					if (nstack < MAX_STACK)
 					{
@@ -2206,7 +2403,7 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 			}
 		}
 	}
-	
+
 	int n = 0;
 	if (bestNode)
 	{
@@ -2221,7 +2418,7 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 			node = next;
 		}
 		while (node);
-		
+
 		// Store result
 		node = prev;
 		do
@@ -2236,11 +2433,11 @@ dtStatus dtNavMeshQuery::moveAlongSurface(dtPolyRef startRef, const float* start
 		}
 		while (node);
 	}
-	
+
 	dtVcopy(resultPos, bestPos);
-	
+
 	*visitedCount = n;
-	
+
 	return status;
 }
 
@@ -2249,7 +2446,7 @@ dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, dtPolyRef to, float* le
 										 unsigned char& fromType, unsigned char& toType) const
 {
 	dtAssert(m_nav);
-	
+
 	const dtMeshTile* fromTile = 0;
 	const dtPoly* fromPoly = 0;
 	if (dtStatusFailed(m_nav->getTileAndPolyByRef(from, &fromTile, &fromPoly)))
@@ -2261,11 +2458,12 @@ dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, dtPolyRef to, float* le
 	if (dtStatusFailed(m_nav->getTileAndPolyByRef(to, &toTile, &toPoly)))
 		return DT_FAILURE | DT_INVALID_PARAM;
 	toType = toPoly->getType();
-		
+
 	return getPortalPoints(from, fromPoly, fromTile, to, toPoly, toTile, left, right);
 }
 
 // Returns portal points between two polygons.
+// 返回两个多边形的 portal points
 dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, const dtPoly* fromPoly, const dtMeshTile* fromTile,
 										 dtPolyRef to, const dtPoly* toPoly, const dtMeshTile* toTile,
 										 float* left, float* right) const
@@ -2282,7 +2480,7 @@ dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, const dtPoly* fromPoly,
 	}
 	if (!link)
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	// Handle off-mesh connections.
 	if (fromPoly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 	{
@@ -2299,7 +2497,7 @@ dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, const dtPoly* fromPoly,
 		}
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	if (toPoly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 	{
 		for (unsigned int i = toPoly->firstLink; i != DT_NULL_LINK; i = toTile->links[i].next)
@@ -2314,15 +2512,16 @@ dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, const dtPoly* fromPoly,
 		}
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	// Find portal vertices.
 	const int v0 = fromPoly->verts[link->edge];
 	const int v1 = fromPoly->verts[(link->edge+1) % (int)fromPoly->vertCount];
 	dtVcopy(left, &fromTile->verts[v0*3]);
 	dtVcopy(right, &fromTile->verts[v1*3]);
-	
+
 	// If the link is at tile boundary, dtClamp the vertices to
 	// the link width.
+	// 如果链接位于图块边界，则 dt 将顶点限制为链接宽度。
 	if (link->side != 0xff)
 	{
 		// Unpack portal limits.
@@ -2335,11 +2534,11 @@ dtStatus dtNavMeshQuery::getPortalPoints(dtPolyRef from, const dtPoly* fromPoly,
 			dtVlerp(right, &fromTile->verts[v0*3], &fromTile->verts[v1*3], tmax);
 		}
 	}
-	
+
 	return DT_SUCCESS;
 }
 
-// Returns edge mid point between two polygons.
+// 返回两个多边形之间的边中点。
 dtStatus dtNavMeshQuery::getEdgeMidPoint(dtPolyRef from, dtPolyRef to, float* mid) const
 {
 	float left[3], right[3];
@@ -2371,16 +2570,16 @@ dtStatus dtNavMeshQuery::getEdgeMidPoint(dtPolyRef from, const dtPoly* fromPoly,
 ///
 /// This method is meant to be used for quick, short distance checks.
 ///
-/// If the path array is too small to hold the result, it will be filled as 
+/// If the path array is too small to hold the result, it will be filled as
 /// far as possible from the start postion toward the end position.
 ///
 /// <b>Using the Hit Parameter (t)</b>
-/// 
-/// If the hit parameter is a very high value (FLT_MAX), then the ray has hit 
-/// the end position. In this case the path represents a valid corridor to the 
+///
+/// If the hit parameter is a very high value (FLT_MAX), then the ray has hit
+/// the end position. In this case the path represents a valid corridor to the
 /// end position and the value of @p hitNormal is undefined.
 ///
-/// If the hit parameter is zero, then the start position is on the wall that 
+/// If the hit parameter is zero, then the start position is on the wall that
 /// was hit and the value of @p hitNormal is undefined.
 ///
 /// If 0 < t < 1.0 then the following applies:
@@ -2392,18 +2591,44 @@ dtStatus dtNavMeshQuery::getEdgeMidPoint(dtPolyRef from, const dtPoly* fromPoly,
 ///
 /// <b>Use Case Restriction</b>
 ///
-/// The raycast ignores the y-value of the end position. (2D check.) This 
+/// The raycast ignores the y-value of the end position. (2D check.) This
 /// places significant limits on how it can be used. For example:
 ///
-/// Consider a scene where there is a main floor with a second floor balcony 
-/// that hangs over the main floor. So the first floor mesh extends below the 
-/// balcony mesh. The start position is somewhere on the first floor. The end 
+/// Consider a scene where there is a main floor with a second floor balcony
+/// that hangs over the main floor. So the first floor mesh extends below the
+/// balcony mesh. The start position is somewhere on the first floor. The end
 /// position is on the balcony.
 ///
-/// The raycast will search toward the end position along the first floor mesh. 
+/// The raycast will search toward the end position along the first floor mesh.
 /// If it reaches the end position's xz-coordinates it will indicate FLT_MAX
 /// (no wall hit), meaning it reached the end position. This is one example of why
 /// this method is meant for short distance checks.
+///
+/// 此方法旨在用于快速、短距离检查。
+/// 如果路径数组太小而无法容纳结果，则会从起始位置向结束位置尽可能填充路径数组。
+///
+/// <b>Using the Hit Parameter (t)</b>
+/// 如果命中参数是一个非常高的值 (FLT_MAX)，则光线已命中结束位置。
+/// 在这种情况下，路径表示到结束位置的有效走廊，并且 @p hitNormal 的值未定义。
+///
+/// 如果 hit 参数为零，则起始位置位于被击中的墙壁上，并且 @p hitNormal 的值未定义。
+///
+/// 如果 0 < t < 1.0，则以下情况适用：
+///
+/// @code
+/// distanceToHitBorder = distanceToEndPosition * t
+/// hitPoint = startPos + (endPos - startPos) * t
+/// @endcode
+///
+/// <b>Use Case Restriction</b>
+///
+/// 光线投射忽略结束位置的 y 值。 （二维检查。）这对其使用方式造成了很大的限制。 例如：
+///
+/// 考虑一个场景，其中有一个主楼层和一个悬挂在主楼层上方的二楼阳台。
+/// 所以一楼网格延伸到阳台网格下方。 起始位置在一楼某处。 最终位置是在阳台上。
+///
+/// 光线投射将沿着第一层网格向结束位置搜索。 如果它到达结束位置的 xz 坐标，
+/// 它将指示 FLT_MAX（没有撞墙），这意味着它到达了结束位置。 这是为什么该方法适用于短距离检查的一个例子。
 ///
 dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, const float* endPos,
 								 const dtQueryFilter* filter,
@@ -2414,7 +2639,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 	hit.maxPath = maxPath;
 
 	dtStatus status = raycast(startRef, startPos, endPos, filter, 0, &hit);
-	
+
 	*t = hit.t;
 	if (hitNormal)
 		dtVcopy(hitNormal, hit.hitNormal);
@@ -2429,16 +2654,16 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 ///
 /// This method is meant to be used for quick, short distance checks.
 ///
-/// If the path array is too small to hold the result, it will be filled as 
+/// If the path array is too small to hold the result, it will be filled as
 /// far as possible from the start postion toward the end position.
 ///
 /// <b>Using the Hit Parameter t of RaycastHit</b>
-/// 
-/// If the hit parameter is a very high value (FLT_MAX), then the ray has hit 
-/// the end position. In this case the path represents a valid corridor to the 
+///
+/// If the hit parameter is a very high value (FLT_MAX), then the ray has hit
+/// the end position. In this case the path represents a valid corridor to the
 /// end position and the value of @p hitNormal is undefined.
 ///
-/// If the hit parameter is zero, then the start position is on the wall that 
+/// If the hit parameter is zero, then the start position is on the wall that
 /// was hit and the value of @p hitNormal is undefined.
 ///
 /// If 0 < t < 1.0 then the following applies:
@@ -2450,19 +2675,46 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 ///
 /// <b>Use Case Restriction</b>
 ///
-/// The raycast ignores the y-value of the end position. (2D check.) This 
+/// The raycast ignores the y-value of the end position. (2D check.) This
 /// places significant limits on how it can be used. For example:
 ///
-/// Consider a scene where there is a main floor with a second floor balcony 
-/// that hangs over the main floor. So the first floor mesh extends below the 
-/// balcony mesh. The start position is somewhere on the first floor. The end 
+/// Consider a scene where there is a main floor with a second floor balcony
+/// that hangs over the main floor. So the first floor mesh extends below the
+/// balcony mesh. The start position is somewhere on the first floor. The end
 /// position is on the balcony.
 ///
-/// The raycast will search toward the end position along the first floor mesh. 
+/// The raycast will search toward the end position along the first floor mesh.
 /// If it reaches the end position's xz-coordinates it will indicate FLT_MAX
 /// (no wall hit), meaning it reached the end position. This is one example of why
 /// this method is meant for short distance checks.
 ///
+/// 此方法旨在用于快速、短距离检查。
+///
+/// 如果路径数组太小而无法容纳结果，则会从起始位置向结束位置尽可能填充路径数组。
+///
+/// <b>Using the Hit Parameter t of RaycastHit</b>
+///
+/// 如果命中参数是一个非常高的值 (FLT_MAX)，则光线已命中结束位置。
+/// 在这种情况下，路径表示到结束位置的有效走廊，并且 @p hitNormal 的值未定义。
+///
+/// 如果 hit 参数为零，则起始位置位于被击中的墙壁上，并且 @p hitNormal 的值未定义。
+///
+/// 如果 0 < t < 1.0，则以下情况适用：
+///
+/// @code
+/// distanceToHitBorder = distanceToEndPosition * t
+/// hitPoint = startPos + (endPos - startPos) * t
+/// @endcode
+///
+/// <b>Use Case Restriction</b>
+///
+/// 光线投射忽略结束位置的 y 值。 （二维检查。）这对其使用方式造成了很大的限制。 例如：
+///
+/// 考虑一个场景，其中有一个主楼层和一个悬挂在主楼层上方的二楼阳台。 所以一楼网格延伸到阳台网格下方。
+/// 起始位置在一楼某处。 最终位置是在阳台上。
+///
+/// 光线投射将沿着第一层网格向结束位置搜索。 如果它到达结束位置的 xz 坐标，它将指示 FLT_MAX（没有撞墙），这意味着它到达了结束位置。
+/// 这是为什么该方法适用于短距离检查的一个例子。
 dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, const float* endPos,
 								 const dtQueryFilter* filter, const unsigned int options,
 								 dtRaycastHit* hit, dtPolyRef prevRef) const
@@ -2485,9 +2737,9 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	float dir[3], curPos[3], lastPos[3];
-	float verts[DT_VERTS_PER_POLYGON*3+3];	
+	float verts[DT_VERTS_PER_POLYGON*3+3];
 	int n = 0;
 
 	dtVcopy(curPos, startPos);
@@ -2501,6 +2753,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 	dtPolyRef curRef;
 
 	// The API input has been checked already, skip checking internal data.
+	// API 输入已被检查，跳过检查内部数据。
 	curRef = startRef;
 	tile = 0;
 	poly = 0;
@@ -2513,7 +2766,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 	while (curRef)
 	{
 		// Cast ray against current polygon.
-		
+
 		// Collect vertices.
 		int nv = 0;
 		for (int i = 0; i < (int)poly->vertCount; ++i)
@@ -2521,12 +2774,13 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 			dtVcopy(&verts[nv*3], &tile->verts[poly->verts[i]*3]);
 			nv++;
 		}
-		
+
 		float tmin, tmax;
 		int segMin, segMax;
 		if (!dtIntersectSegmentPoly2D(startPos, endPos, verts, nv, tmin, tmax, segMin, segMax))
 		{
 			// Could not hit the polygon, keep the old t and report hit.
+			// 无法命中多边形，保留旧的 t 并报告命中。
 			hit->pathCount = n;
 			return status;
 		}
@@ -2534,21 +2788,24 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 		hit->hitEdgeIndex = segMax;
 
 		// Keep track of furthest t so far.
+		// 跟踪迄今为止最远的 t。
 		if (tmax > hit->t)
 			hit->t = tmax;
-		
+
 		// Store visited polygons.
+		// 存储访问过的多边形。
 		if (n < hit->maxPath)
 			hit->path[n++] = curRef;
 		else
 			status |= DT_BUFFER_TOO_SMALL;
 
 		// Ray end is completely inside the polygon.
+		// 光线末端完全位于多边形内部。
 		if (segMax == -1)
 		{
 			hit->t = FLT_MAX;
 			hit->pathCount = n;
-			
+
 			// add the cost
 			if (options & DT_RAYCAST_USE_COSTS)
 				hit->pathCost += filter->getCost(curPos, endPos, prevRef, prevTile, prevPoly, curRef, tile, poly, curRef, tile, poly);
@@ -2557,51 +2814,53 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 
 		// Follow neighbours.
 		dtPolyRef nextRef = 0;
-		
+
 		for (unsigned int i = poly->firstLink; i != DT_NULL_LINK; i = tile->links[i].next)
 		{
 			const dtLink* link = &tile->links[i];
-			
+
 			// Find link which contains this edge.
 			if ((int)link->edge != segMax)
 				continue;
-			
+
 			// Get pointer to the next polygon.
 			nextTile = 0;
 			nextPoly = 0;
 			m_nav->getTileAndPolyByRefUnsafe(link->ref, &nextTile, &nextPoly);
-			
+
 			// Skip off-mesh connections.
 			if (nextPoly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 				continue;
-			
+
 			// Skip links based on filter.
 			if (!filter->passFilter(link->ref, nextTile, nextPoly))
 				continue;
-			
+
 			// If the link is internal, just return the ref.
 			if (link->side == 0xff)
 			{
 				nextRef = link->ref;
 				break;
 			}
-			
+
 			// If the link is at tile boundary,
-			
+
 			// Check if the link spans the whole edge, and accept.
+			// 检查链接是否跨越整个边缘，然后接受。
 			if (link->bmin == 0 && link->bmax == 255)
 			{
 				nextRef = link->ref;
 				break;
 			}
-			
+
 			// Check for partial edge links.
 			const int v0 = poly->verts[link->edge];
 			const int v1 = poly->verts[(link->edge+1) % poly->vertCount];
 			const float* left = &tile->verts[v0*3];
 			const float* right = &tile->verts[v1*3];
-			
+
 			// Check that the intersection lies inside the link portal.
+			// 检查交叉点是否位于链接入口内。
 			if (link->side == 0 || link->side == 4)
 			{
 				// Calculate link size.
@@ -2609,7 +2868,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 				float lmin = left[2] + (right[2] - left[2])*(link->bmin*s);
 				float lmax = left[2] + (right[2] - left[2])*(link->bmax*s);
 				if (lmin > lmax) dtSwap(lmin, lmax);
-				
+
 				// Find Z intersection.
 				float z = startPos[2] + (endPos[2]-startPos[2])*tmax;
 				if (z >= lmin && z <= lmax)
@@ -2625,7 +2884,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 				float lmin = left[0] + (right[0] - left[0])*(link->bmin*s);
 				float lmax = left[0] + (right[0] - left[0])*(link->bmax*s);
 				if (lmin > lmax) dtSwap(lmin, lmax);
-				
+
 				// Find X intersection.
 				float x = startPos[0] + (endPos[0]-startPos[0])*tmax;
 				if (x >= lmin && x <= lmax)
@@ -2635,12 +2894,13 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 				}
 			}
 		}
-		
+
 		// add the cost
 		if (options & DT_RAYCAST_USE_COSTS)
 		{
 			// compute the intersection point at the furthest end of the polygon
 			// and correct the height (since the raycast moves in 2d)
+			// 计算多边形最远端的交点并校正高度（因为光线投射在 2d 中移动）
 			dtVcopy(lastPos, curPos);
 			dtVmad(curPos, startPos, dir, hit->t);
 			float* e1 = &verts[segMax*3];
@@ -2657,7 +2917,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 		if (!nextRef)
 		{
 			// No neighbour, we hit a wall.
-			
+
 			// Calculate hit normal.
 			const int a = segMax;
 			const int b = segMax+1 < nv ? segMax+1 : 0;
@@ -2669,7 +2929,7 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 			hit->hitNormal[1] = 0;
 			hit->hitNormal[2] = -dx;
 			dtVnormalize(hit->hitNormal);
-			
+
 			hit->pathCount = n;
 			return status;
 		}
@@ -2682,9 +2942,9 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 		prevPoly = poly;
 		poly = nextPoly;
 	}
-	
+
 	hit->pathCount = n;
-	
+
 	return status;
 }
 
@@ -2694,29 +2954,46 @@ dtStatus dtNavMeshQuery::raycast(dtPolyRef startRef, const float* startPos, cons
 ///
 /// The order of the result set is from least to highest cost to reach the polygon.
 ///
-/// A common use case for this method is to perform Dijkstra searches. 
+/// A common use case for this method is to perform Dijkstra searches.
 /// Candidate polygons are found by searching the graph beginning at the start polygon.
 ///
-/// If a polygon is not found via the graph search, even if it intersects the 
+/// If a polygon is not found via the graph search, even if it intersects the
 /// search circle, it will not be included in the result set. For example:
 ///
 /// polyA is the start polygon.
 /// polyB shares an edge with polyA. (Is adjacent.)
 /// polyC shares an edge with polyB, but not with polyA
-/// Even if the search circle overlaps polyC, it will not be included in the 
+/// Even if the search circle overlaps polyC, it will not be included in the
 /// result set unless polyB is also in the set.
-/// 
-/// The value of the center point is used as the start position for cost 
-/// calculations. It is not projected onto the surface of the mesh, so its 
+///
+/// The value of the center point is used as the start position for cost
+/// calculations. It is not projected onto the surface of the mesh, so its
 /// y-value will effect the costs.
 ///
-/// Intersection tests occur in 2D. All polygons and the search circle are 
-/// projected onto the xz-plane. So the y-value of the center point does not 
+/// Intersection tests occur in 2D. All polygons and the search circle are
+/// projected onto the xz-plane. So the y-value of the center point does not
 /// effect intersection tests.
 ///
-/// If the result arrays are to small to hold the entire result set, they will be 
+/// If the result arrays are to small to hold the entire result set, they will be
 /// filled to capacity.
-/// 
+///
+/// 必须至少提供一个结果数组。
+///
+/// 结果集的顺序是从最低到最高到达多边形的成本。
+///
+/// 此方法的一个常见用例是执行 Dijkstra 搜索。 通过从起始多边形开始搜索图形来找到候选多边形。
+///
+/// 如果通过图形搜索没有找到多边形，即使它与搜索圆相交，也不会包含在结果集中。 例如：
+///
+/// polyA 是起始多边形。 PolyB 与 PolyA 共享边缘。 （相邻。）polyC 与polyB 共享一条边，但与polyA 不共享一条边。
+/// 即使搜索圈与polyC 重叠，它也不会包含在结果集中，除非polyB 也在集合中。
+///
+/// 中心点的值用作成本计算的起始位置。 它不会投影到网格表面，因此它的 y 值会影响成本。
+///
+/// 相交测试以二维形式进行。 所有多边形和搜索圆都投影到 xz 平面上。 因此中心点的 y 值不会影响相交测试。
+///
+/// 如果结果数组太小而无法容纳整个结果集，它们将被填满。
+///
 dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* centerPos, const float radius,
 											   const dtQueryFilter* filter,
 											   dtPolyRef* resultRef, dtPolyRef* resultParent, float* resultCost,
@@ -2738,10 +3015,10 @@ dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* 
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	m_nodePool->clear();
 	m_openList->clear();
-	
+
 	dtNode* startNode = m_nodePool->getNode(startRef);
 	dtVcopy(startNode->pos, centerPos);
 	startNode->pidx = 0;
@@ -2750,26 +3027,26 @@ dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* 
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_OPEN;
 	m_openList->push(startNode);
-	
+
 	dtStatus status = DT_SUCCESS;
-	
+
 	int n = 0;
-	
+
 	const float radiusSqr = dtSqr(radius);
-	
+
 	while (!m_openList->empty())
 	{
 		dtNode* bestNode = m_openList->pop();
 		bestNode->flags &= ~DT_NODE_OPEN;
 		bestNode->flags |= DT_NODE_CLOSED;
-		
+
 		// Get poly and tile.
 		// The API input has been checked already, skip checking internal data.
 		const dtPolyRef bestRef = bestNode->id;
 		const dtMeshTile* bestTile = 0;
 		const dtPoly* bestPoly = 0;
 		m_nav->getTileAndPolyByRefUnsafe(bestRef, &bestTile, &bestPoly);
-		
+
 		// Get parent poly and tile.
 		dtPolyRef parentRef = 0;
 		const dtMeshTile* parentTile = 0;
@@ -2793,7 +3070,7 @@ dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* 
 		{
 			status |= DT_BUFFER_TOO_SMALL;
 		}
-		
+
 		for (unsigned int i = bestPoly->firstLink; i != DT_NULL_LINK; i = bestTile->links[i].next)
 		{
 			const dtLink* link = &bestTile->links[i];
@@ -2801,41 +3078,44 @@ dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* 
 			// Skip invalid neighbours and do not follow back to parent.
 			if (!neighbourRef || neighbourRef == parentRef)
 				continue;
-			
+
 			// Expand to neighbour
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
 			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
-		
+
 			// Do not advance if the polygon is excluded by the filter.
+			// 如果多边形被过滤器排除，则不要前进。
 			if (!filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
-			
+
 			// Find edge and calc distance to the edge.
+			// 找到边缘并计算到边缘的距离。
 			float va[3], vb[3];
 			if (!getPortalPoints(bestRef, bestPoly, bestTile, neighbourRef, neighbourPoly, neighbourTile, va, vb))
 				continue;
-			
+
 			// If the circle is not touching the next polygon, skip it.
+			// 如果圆没有接触下一个多边形，则跳过它。
 			float tseg;
 			float distSqr = dtDistancePtSegSqr2D(centerPos, va, vb, tseg);
 			if (distSqr > radiusSqr)
 				continue;
-			
+
 			dtNode* neighbourNode = m_nodePool->getNode(neighbourRef);
 			if (!neighbourNode)
 			{
 				status |= DT_OUT_OF_NODES;
 				continue;
 			}
-				
+
 			if (neighbourNode->flags & DT_NODE_CLOSED)
 				continue;
-			
+
 			// Cost
 			if (neighbourNode->flags == 0)
 				dtVlerp(neighbourNode->pos, va, vb, 0.5f);
-			
+
 			float cost = filter->getCost(
 				bestNode->pos, neighbourNode->pos,
 				parentRef, parentTile, parentPoly,
@@ -2843,15 +3123,16 @@ dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* 
 				neighbourRef, neighbourTile, neighbourPoly);
 
 			const float total = bestNode->total + cost;
-			
+
 			// The node is already in open list and the new result is worse, skip.
+			// 该节点已在 open list 中，并且新结果更糟，请跳过。
 			if ((neighbourNode->flags & DT_NODE_OPEN) && total >= neighbourNode->total)
 				continue;
-			
+
 			neighbourNode->id = neighbourRef;
 			neighbourNode->pidx = m_nodePool->getNodeIdx(bestNode);
 			neighbourNode->total = total;
-			
+
 			if (neighbourNode->flags & DT_NODE_OPEN)
 			{
 				m_openList->modify(neighbourNode);
@@ -2863,33 +3144,47 @@ dtStatus dtNavMeshQuery::findPolysAroundCircle(dtPolyRef startRef, const float* 
 			}
 		}
 	}
-	
+
 	*resultCount = n;
-	
+
 	return status;
 }
 
 /// @par
 ///
 /// The order of the result set is from least to highest cost.
-/// 
+///
 /// At least one result array must be provided.
 ///
-/// A common use case for this method is to perform Dijkstra searches. 
-/// Candidate polygons are found by searching the graph beginning at the start 
+/// A common use case for this method is to perform Dijkstra searches.
+/// Candidate polygons are found by searching the graph beginning at the start
 /// polygon.
-/// 
+///
 /// The same intersection test restrictions that apply to findPolysAroundCircle()
 /// method apply to this method.
-/// 
-/// The 3D centroid of the search polygon is used as the start position for cost 
+///
+/// The 3D centroid of the search polygon is used as the start position for cost
 /// calculations.
-/// 
-/// Intersection tests occur in 2D. All polygons are projected onto the 
+///
+/// Intersection tests occur in 2D. All polygons are projected onto the
 /// xz-plane. So the y-values of the vertices do not effect intersection tests.
-/// 
-/// If the result arrays are is too small to hold the entire result set, they will 
+///
+/// If the result arrays are is too small to hold the entire result set, they will
 /// be filled to capacity.
+///
+/// 结果集的顺序是从最低成本到最高成本。
+///
+/// 必须至少提供一个结果数组。
+///
+/// 此方法的一个常见用例是执行 Dijkstra 搜索。 通过从起始多边形开始搜索图形来找到候选多边形。
+///
+/// 适用于 findPolysAroundCircle() 方法的相同相交测试限制也适用于此方法。
+///
+/// 搜索多边形的 3D 质心用作成本计算的起始位置。
+///
+/// 相交测试以二维形式进行。 所有多边形都投影到 xz 平面上。 因此顶点的 y 值不会影响相交测试。
+///
+/// 如果结果数组太小而无法容纳整个结果集，它们将被填满。
 ///
 dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* verts, const int nverts,
 											  const dtQueryFilter* filter,
@@ -2911,14 +3206,14 @@ dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* v
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	// Validate input
 	if (!startRef || !m_nav->isValidPolyRef(startRef))
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	m_nodePool->clear();
 	m_openList->clear();
-	
+
 	float centerPos[3] = {0,0,0};
 	for (int i = 0; i < nverts; ++i)
 		dtVadd(centerPos,centerPos,&verts[i*3]);
@@ -2932,24 +3227,24 @@ dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* v
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_OPEN;
 	m_openList->push(startNode);
-	
+
 	dtStatus status = DT_SUCCESS;
 
 	int n = 0;
-	
+
 	while (!m_openList->empty())
 	{
 		dtNode* bestNode = m_openList->pop();
 		bestNode->flags &= ~DT_NODE_OPEN;
 		bestNode->flags |= DT_NODE_CLOSED;
-		
+
 		// Get poly and tile.
 		// The API input has been checked already, skip checking internal data.
 		const dtPolyRef bestRef = bestNode->id;
 		const dtMeshTile* bestTile = 0;
 		const dtPoly* bestPoly = 0;
 		m_nav->getTileAndPolyByRefUnsafe(bestRef, &bestTile, &bestPoly);
-		
+
 		// Get parent poly and tile.
 		dtPolyRef parentRef = 0;
 		const dtMeshTile* parentTile = 0;
@@ -2974,7 +3269,7 @@ dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* v
 		{
 			status |= DT_BUFFER_TOO_SMALL;
 		}
-		
+
 		for (unsigned int i = bestPoly->firstLink; i != DT_NULL_LINK; i = bestTile->links[i].next)
 		{
 			const dtLink* link = &bestTile->links[i];
@@ -2982,43 +3277,44 @@ dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* v
 			// Skip invalid neighbours and do not follow back to parent.
 			if (!neighbourRef || neighbourRef == parentRef)
 				continue;
-			
+
 			// Expand to neighbour
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
 			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
-			
+
 			// Do not advance if the polygon is excluded by the filter.
 			if (!filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
-			
+
 			// Find edge and calc distance to the edge.
 			float va[3], vb[3];
 			if (!getPortalPoints(bestRef, bestPoly, bestTile, neighbourRef, neighbourPoly, neighbourTile, va, vb))
 				continue;
-			
+
 			// If the poly is not touching the edge to the next polygon, skip the connection it.
+			// 如果多边形没有接触下一个多边形的边缘，则跳过它的连接。
 			float tmin, tmax;
 			int segMin, segMax;
 			if (!dtIntersectSegmentPoly2D(va, vb, verts, nverts, tmin, tmax, segMin, segMax))
 				continue;
 			if (tmin > 1.0f || tmax < 0.0f)
 				continue;
-			
+
 			dtNode* neighbourNode = m_nodePool->getNode(neighbourRef);
 			if (!neighbourNode)
 			{
 				status |= DT_OUT_OF_NODES;
 				continue;
 			}
-			
+
 			if (neighbourNode->flags & DT_NODE_CLOSED)
 				continue;
-			
+
 			// Cost
 			if (neighbourNode->flags == 0)
 				dtVlerp(neighbourNode->pos, va, vb, 0.5f);
-			
+
 			float cost = filter->getCost(
 				bestNode->pos, neighbourNode->pos,
 				parentRef, parentTile, parentPoly,
@@ -3026,15 +3322,16 @@ dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* v
 				neighbourRef, neighbourTile, neighbourPoly);
 
 			const float total = bestNode->total + cost;
-			
+
 			// The node is already in open list and the new result is worse, skip.
+			// 该节点已在 open list 中，并且新结果更糟，请跳过。
 			if ((neighbourNode->flags & DT_NODE_OPEN) && total >= neighbourNode->total)
 				continue;
-			
+
 			neighbourNode->id = neighbourRef;
 			neighbourNode->pidx = m_nodePool->getNodeIdx(bestNode);
 			neighbourNode->total = total;
-			
+
 			if (neighbourNode->flags & DT_NODE_OPEN)
 			{
 				m_openList->modify(neighbourNode);
@@ -3046,9 +3343,9 @@ dtStatus dtNavMeshQuery::findPolysAroundShape(dtPolyRef startRef, const float* v
 			}
 		}
 	}
-	
+
 	*resultCount = n;
-	
+
 	return status;
 }
 
@@ -3069,26 +3366,38 @@ dtStatus dtNavMeshQuery::getPathFromDijkstraSearch(dtPolyRef endRef, dtPolyRef* 
 
 /// @par
 ///
-/// This method is optimized for a small search radius and small number of result 
+/// This method is optimized for a small search radius and small number of result
 /// polygons.
 ///
-/// Candidate polygons are found by searching the navigation graph beginning at 
+/// Candidate polygons are found by searching the navigation graph beginning at
 /// the start polygon.
 ///
-/// The same intersection test restrictions that apply to the findPolysAroundCircle 
+/// The same intersection test restrictions that apply to the findPolysAroundCircle
 /// mehtod applies to this method.
 ///
-/// The value of the center point is used as the start point for cost calculations. 
-/// It is not projected onto the surface of the mesh, so its y-value will effect 
+/// The value of the center point is used as the start point for cost calculations.
+/// It is not projected onto the surface of the mesh, so its y-value will effect
 /// the costs.
-/// 
-/// Intersection tests occur in 2D. All polygons and the search circle are 
-/// projected onto the xz-plane. So the y-value of the center point does not 
+///
+/// Intersection tests occur in 2D. All polygons and the search circle are
+/// projected onto the xz-plane. So the y-value of the center point does not
 /// effect intersection tests.
-/// 
-/// If the result arrays are is too small to hold the entire result set, they will 
+///
+/// If the result arrays are is too small to hold the entire result set, they will
 /// be filled to capacity.
-/// 
+///
+/// 此方法针对小搜索半径和少量结果多边形进行了优化。
+///
+/// 通过从起始多边形开始搜索导航图来找到候选多边形。
+///
+/// 适用于 findPolysAroundCircle 方法的相同相交测试限制也适用于此方法。
+///
+/// 中心点的值用作成本计算的起点。 它不会投影到网格表面，因此它的 y 值会影响成本。
+///
+/// 相交测试以二维形式进行。 所有多边形和搜索圆都投影到 xz 平面上。 因此中心点的 y 值不会影响相交测试。
+///
+/// 如果结果数组太小而无法容纳整个结果集，它们将被填满。
+///
 dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float* centerPos, const float radius,
 												const dtQueryFilter* filter,
 												dtPolyRef* resultRef, dtPolyRef* resultParent,
@@ -3113,22 +3422,22 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 	static const int MAX_STACK = 48;
 	dtNode* stack[MAX_STACK];
 	int nstack = 0;
-	
+
 	m_tinyNodePool->clear();
-	
+
 	dtNode* startNode = m_tinyNodePool->getNode(startRef);
 	startNode->pidx = 0;
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_CLOSED;
 	stack[nstack++] = startNode;
-	
+
 	const float radiusSqr = dtSqr(radius);
-	
+
 	float pa[DT_VERTS_PER_POLYGON*3];
 	float pb[DT_VERTS_PER_POLYGON*3];
-	
+
 	dtStatus status = DT_SUCCESS;
-	
+
 	int n = 0;
 	if (n < maxResult)
 	{
@@ -3141,7 +3450,7 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 	{
 		status |= DT_BUFFER_TOO_SMALL;
 	}
-	
+
 	while (nstack)
 	{
 		// Pop front.
@@ -3149,14 +3458,15 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 		for (int i = 0; i < nstack-1; ++i)
 			stack[i] = stack[i+1];
 		nstack--;
-		
+
 		// Get poly and tile.
 		// The API input has been checked already, skip checking internal data.
+		// API 输入已被检查，跳过检查内部数据。
 		const dtPolyRef curRef = curNode->id;
 		const dtMeshTile* curTile = 0;
 		const dtPoly* curPoly = 0;
 		m_nav->getTileAndPolyByRefUnsafe(curRef, &curTile, &curPoly);
-		
+
 		for (unsigned int i = curPoly->firstLink; i != DT_NULL_LINK; i = curTile->links[i].next)
 		{
 			const dtLink* link = &curTile->links[i];
@@ -3164,7 +3474,7 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 			// Skip invalid neighbours.
 			if (!neighbourRef)
 				continue;
-			
+
 			// Skip if cannot alloca more nodes.
 			dtNode* neighbourNode = m_tinyNodePool->getNode(neighbourRef);
 			if (!neighbourNode)
@@ -3172,48 +3482,51 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 			// Skip visited.
 			if (neighbourNode->flags & DT_NODE_CLOSED)
 				continue;
-			
+
 			// Expand to neighbour
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
 			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
-			
+
 			// Skip off-mesh connections.
 			if (neighbourPoly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 				continue;
-			
+
 			// Do not advance if the polygon is excluded by the filter.
 			if (!filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
-			
+
 			// Find edge and calc distance to the edge.
 			float va[3], vb[3];
 			if (!getPortalPoints(curRef, curPoly, curTile, neighbourRef, neighbourPoly, neighbourTile, va, vb))
 				continue;
-			
+
 			// If the circle is not touching the next polygon, skip it.
 			float tseg;
 			float distSqr = dtDistancePtSegSqr2D(centerPos, va, vb, tseg);
 			if (distSqr > radiusSqr)
 				continue;
-			
+
 			// Mark node visited, this is done before the overlap test so that
 			// we will not visit the poly again if the test fails.
+			// 标记已访问的节点，这是在重叠测试之前完成的，这样如果测试失败我们就不会再次访问多边形。
 			neighbourNode->flags |= DT_NODE_CLOSED;
 			neighbourNode->pidx = m_tinyNodePool->getNodeIdx(curNode);
-			
+
 			// Check that the polygon does not collide with existing polygons.
-			
+			// 检查多边形是否与现有多边形发生碰撞。
+
 			// Collect vertices of the neighbour poly.
+			// 收集相邻多边形的顶点。
 			const int npa = neighbourPoly->vertCount;
 			for (int k = 0; k < npa; ++k)
 				dtVcopy(&pa[k*3], &neighbourTile->verts[neighbourPoly->verts[k]*3]);
-			
+
 			bool overlap = false;
 			for (int j = 0; j < n; ++j)
 			{
 				dtPolyRef pastRef = resultRef[j];
-				
+
 				// Connected polys do not overlap.
 				bool connected = false;
 				for (unsigned int k = curPoly->firstLink; k != DT_NULL_LINK; k = curTile->links[k].next)
@@ -3226,17 +3539,17 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 				}
 				if (connected)
 					continue;
-				
+
 				// Potentially overlapping.
 				const dtMeshTile* pastTile = 0;
 				const dtPoly* pastPoly = 0;
 				m_nav->getTileAndPolyByRefUnsafe(pastRef, &pastTile, &pastPoly);
-				
+
 				// Get vertices and test overlap
 				const int npb = pastPoly->vertCount;
 				for (int k = 0; k < npb; ++k)
 					dtVcopy(&pb[k*3], &pastTile->verts[pastPoly->verts[k]*3]);
-				
+
 				if (dtOverlapPolyPoly2D(pa,npa, pb,npb))
 				{
 					overlap = true;
@@ -3245,7 +3558,7 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 			}
 			if (overlap)
 				continue;
-			
+
 			// This poly is fine, store and advance to the poly.
 			if (n < maxResult)
 			{
@@ -3258,16 +3571,16 @@ dtStatus dtNavMeshQuery::findLocalNeighbourhood(dtPolyRef startRef, const float*
 			{
 				status |= DT_BUFFER_TOO_SMALL;
 			}
-			
+
 			if (nstack < MAX_STACK)
 			{
 				stack[nstack++] = neighbourNode;
 			}
 		}
 	}
-	
+
 	*resultCount = n;
-	
+
 	return status;
 }
 
@@ -3302,15 +3615,18 @@ static void insertInterval(dtSegInterval* ints, int& nints, const int maxInts,
 
 /// @par
 ///
-/// If the @p segmentRefs parameter is provided, then all polygon segments will be returned. 
+/// If the @p segmentRefs parameter is provided, then all polygon segments will be returned.
 /// Otherwise only the wall segments are returned.
-/// 
-/// A segment that is normally a portal will be included in the result set as a 
+///
+/// A segment that is normally a portal will be included in the result set as a
 /// wall if the @p filter results in the neighbor polygon becoomming impassable.
-/// 
-/// The @p segmentVerts and @p segmentRefs buffers should normally be sized for the 
+///
+/// The @p segmentVerts and @p segmentRefs buffers should normally be sized for the
 /// maximum segments per polygon of the source navigation mesh.
-/// 
+///
+/// 如果提供了 @p segmentRefs 参数，则将返回所有多边形线段。 否则仅返回墙段。
+/// 如果 @p filter 结果返回相邻多边形无法通过，则通常为入口的线段将作为墙包含在结果集中。
+/// 通常应根据源导航网格的每个多边形的最大分段来调整 @p segmentVerts 和 @p segmentRefs 缓冲区的大小。
 dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter* filter,
 											 float* segmentVerts, dtPolyRef* segmentRefs, int* segmentCount,
 											 const int maxSegments) const
@@ -3319,7 +3635,7 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 
 	if (!segmentCount)
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	*segmentCount = 0;
 
 	const dtMeshTile* tile = 0;
@@ -3329,16 +3645,16 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 
 	if (!filter || !segmentVerts || maxSegments < 0)
 		return DT_FAILURE | DT_INVALID_PARAM;
-	
+
 	int n = 0;
 	static const int MAX_INTERVAL = 16;
 	dtSegInterval ints[MAX_INTERVAL];
 	int nints;
-	
+
 	const bool storePortals = segmentRefs != 0;
-	
+
 	dtStatus status = DT_SUCCESS;
-	
+
 	for (int i = 0, j = (int)poly->vertCount-1; i < (int)poly->vertCount; j = i++)
 	{
 		// Skip non-solid edges.
@@ -3366,7 +3682,7 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 		}
 		else
 		{
-			// Internal edge
+			// Internal edge(tile内部的边)
 			dtPolyRef neiRef = 0;
 			if (poly->neis[j])
 			{
@@ -3377,9 +3693,10 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 			}
 
 			// If the edge leads to another polygon and portals are not stored, skip.
+			// 如果该边通向另一个多边形并且 这个portals未存储，则跳过。
 			if (neiRef != 0 && !storePortals)
 				continue;
-			
+
 			if (n < maxSegments)
 			{
 				const float* vj = &tile->verts[poly->verts[j]*3];
@@ -3395,14 +3712,14 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 			{
 				status |= DT_BUFFER_TOO_SMALL;
 			}
-			
+
 			continue;
 		}
-		
+
 		// Add sentinels
 		insertInterval(ints, nints, MAX_INTERVAL, -1, 0, 0);
 		insertInterval(ints, nints, MAX_INTERVAL, 255, 256, 0);
-		
+
 		// Store segments.
 		const float* vj = &tile->verts[poly->verts[j]*3];
 		const float* vi = &tile->verts[poly->verts[i]*3];
@@ -3411,8 +3728,8 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 			// Portal segment.
 			if (storePortals && ints[k].ref)
 			{
-				const float tmin = ints[k].tmin/255.0f; 
-				const float tmax = ints[k].tmax/255.0f; 
+				const float tmin = ints[k].tmin/255.0f;
+				const float tmax = ints[k].tmax/255.0f;
 				if (n < maxSegments)
 				{
 					float* seg = &segmentVerts[n*6];
@@ -3433,8 +3750,8 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 			const int imax = ints[k].tmin;
 			if (imin != imax)
 			{
-				const float tmin = imin/255.0f; 
-				const float tmax = imax/255.0f; 
+				const float tmin = imin/255.0f;
+				const float tmax = imax/255.0f;
 				if (n < maxSegments)
 				{
 					float* seg = &segmentVerts[n*6];
@@ -3451,9 +3768,9 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 			}
 		}
 	}
-	
+
 	*segmentCount = n;
-	
+
 	return status;
 }
 
@@ -3461,11 +3778,17 @@ dtStatus dtNavMeshQuery::getPolyWallSegments(dtPolyRef ref, const dtQueryFilter*
 ///
 /// @p hitPos is not adjusted using the height detail data.
 ///
-/// @p hitDist will equal the search radius if there is no wall within the 
+/// @p hitDist will equal the search radius if there is no wall within the
 /// radius. In this case the values of @p hitPos and @p hitNormal are
 /// undefined.
 ///
 /// The normal will become unpredicable if @p hitDist is a very small number.
+///
+/// @p hitPos 不使用高度细节数据(height detail data)进行调整。
+///
+/// 如果搜索半径内没有墙壁，@p hitDist 将等于搜索半径。 在这种情况下，@p hitPos 和 @p hitNormal 的值未定义。
+///
+/// 如果@p hitDist 是一个非常小的数字，那么法线将变得不可预测。
 ///
 dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* centerPos, const float maxRadius,
 											const dtQueryFilter* filter,
@@ -3474,7 +3797,7 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 	dtAssert(m_nav);
 	dtAssert(m_nodePool);
 	dtAssert(m_openList);
-	
+
 	// Validate input
 	if (!m_nav->isValidPolyRef(startRef) ||
 		!centerPos || !dtVisfinite(centerPos) ||
@@ -3483,10 +3806,10 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 	{
 		return DT_FAILURE | DT_INVALID_PARAM;
 	}
-	
+
 	m_nodePool->clear();
 	m_openList->clear();
-	
+
 	dtNode* startNode = m_nodePool->getNode(startRef);
 	dtVcopy(startNode->pos, centerPos);
 	startNode->pidx = 0;
@@ -3495,24 +3818,24 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 	startNode->id = startRef;
 	startNode->flags = DT_NODE_OPEN;
 	m_openList->push(startNode);
-	
+
 	float radiusSqr = dtSqr(maxRadius);
-	
+
 	dtStatus status = DT_SUCCESS;
-	
+
 	while (!m_openList->empty())
 	{
 		dtNode* bestNode = m_openList->pop();
 		bestNode->flags &= ~DT_NODE_OPEN;
 		bestNode->flags |= DT_NODE_CLOSED;
-		
+
 		// Get poly and tile.
 		// The API input has been checked already, skip checking internal data.
 		const dtPolyRef bestRef = bestNode->id;
 		const dtMeshTile* bestTile = 0;
 		const dtPoly* bestPoly = 0;
 		m_nav->getTileAndPolyByRefUnsafe(bestRef, &bestTile, &bestPoly);
-		
+
 		// Get parent poly and tile.
 		dtPolyRef parentRef = 0;
 		const dtMeshTile* parentTile = 0;
@@ -3521,7 +3844,7 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 			parentRef = m_nodePool->getNodeAtIdx(bestNode->pidx)->id;
 		if (parentRef)
 			m_nav->getTileAndPolyByRefUnsafe(parentRef, &parentTile, &parentPoly);
-		
+
 		// Hit test walls.
 		for (int i = 0, j = (int)bestPoly->vertCount-1; i < (int)bestPoly->vertCount; j = i++)
 		{
@@ -3556,17 +3879,17 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 				if (filter->passFilter(ref, bestTile, &bestTile->polys[idx]))
 					continue;
 			}
-			
+
 			// Calc distance to the edge.
 			const float* vj = &bestTile->verts[bestPoly->verts[j]*3];
 			const float* vi = &bestTile->verts[bestPoly->verts[i]*3];
 			float tseg;
 			float distSqr = dtDistancePtSegSqr2D(centerPos, vj, vi, tseg);
-			
+
 			// Edge is too far, skip.
 			if (distSqr > radiusSqr)
 				continue;
-			
+
 			// Hit wall, update radius.
 			radiusSqr = distSqr;
 			// Calculate hit pos.
@@ -3574,7 +3897,7 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 			hitPos[1] = vj[1] + (vi[1] - vj[1])*tseg;
 			hitPos[2] = vj[2] + (vi[2] - vj[2])*tseg;
 		}
-		
+
 		for (unsigned int i = bestPoly->firstLink; i != DT_NULL_LINK; i = bestTile->links[i].next)
 		{
 			const dtLink* link = &bestTile->links[i];
@@ -3582,26 +3905,26 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 			// Skip invalid neighbours and do not follow back to parent.
 			if (!neighbourRef || neighbourRef == parentRef)
 				continue;
-			
+
 			// Expand to neighbour.
 			const dtMeshTile* neighbourTile = 0;
 			const dtPoly* neighbourPoly = 0;
 			m_nav->getTileAndPolyByRefUnsafe(neighbourRef, &neighbourTile, &neighbourPoly);
-			
+
 			// Skip off-mesh connections.
 			if (neighbourPoly->getType() == DT_POLYTYPE_OFFMESH_CONNECTION)
 				continue;
-			
+
 			// Calc distance to the edge.
 			const float* va = &bestTile->verts[bestPoly->verts[link->edge]*3];
 			const float* vb = &bestTile->verts[bestPoly->verts[(link->edge+1) % bestPoly->vertCount]*3];
 			float tseg;
 			float distSqr = dtDistancePtSegSqr2D(centerPos, va, vb, tseg);
-			
+
 			// If the circle is not touching the next polygon, skip it.
 			if (distSqr > radiusSqr)
 				continue;
-			
+
 			if (!filter->passFilter(neighbourRef, neighbourTile, neighbourPoly))
 				continue;
 
@@ -3611,28 +3934,28 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 				status |= DT_OUT_OF_NODES;
 				continue;
 			}
-			
+
 			if (neighbourNode->flags & DT_NODE_CLOSED)
 				continue;
-			
+
 			// Cost
 			if (neighbourNode->flags == 0)
 			{
 				getEdgeMidPoint(bestRef, bestPoly, bestTile,
 								neighbourRef, neighbourPoly, neighbourTile, neighbourNode->pos);
 			}
-			
+
 			const float total = bestNode->total + dtVdist(bestNode->pos, neighbourNode->pos);
-			
+
 			// The node is already in open list and the new result is worse, skip.
 			if ((neighbourNode->flags & DT_NODE_OPEN) && total >= neighbourNode->total)
 				continue;
-			
+
 			neighbourNode->id = neighbourRef;
 			neighbourNode->flags = (neighbourNode->flags & ~DT_NODE_CLOSED);
 			neighbourNode->pidx = m_nodePool->getNodeIdx(bestNode);
 			neighbourNode->total = total;
-				
+
 			if (neighbourNode->flags & DT_NODE_OPEN)
 			{
 				m_openList->modify(neighbourNode);
@@ -3644,13 +3967,13 @@ dtStatus dtNavMeshQuery::findDistanceToWall(dtPolyRef startRef, const float* cen
 			}
 		}
 	}
-	
+
 	// Calc hit normal.
 	dtVsub(hitNormal, centerPos, hitPos);
 	dtVnormalize(hitNormal);
-	
+
 	*hitDist = dtMathSqrtf(radiusSqr);
-	
+
 	return status;
 }
 
@@ -3670,13 +3993,14 @@ bool dtNavMeshQuery::isValidPolyRef(dtPolyRef ref, const dtQueryFilter* filter) 
 
 /// @par
 ///
-/// The closed list is the list of polygons that were fully evaluated during 
+/// The closed list is the list of polygons that were fully evaluated during
 /// the last navigation graph search. (A* or Dijkstra)
-/// 
+///
+/// 关闭列表是在上次导航图搜索期间完全评估的多边形列表。 （A* 或迪杰斯特拉）
 bool dtNavMeshQuery::isInClosedList(dtPolyRef ref) const
 {
 	if (!m_nodePool) return false;
-	
+
 	dtNode* nodes[DT_MAX_STATES_PER_NODE];
 	int n= m_nodePool->findNodes(ref, nodes, DT_MAX_STATES_PER_NODE);
 
@@ -3684,7 +4008,7 @@ bool dtNavMeshQuery::isInClosedList(dtPolyRef ref) const
 	{
 		if (nodes[i]->flags & DT_NODE_CLOSED)
 			return true;
-	}		
+	}
 
 	return false;
 }

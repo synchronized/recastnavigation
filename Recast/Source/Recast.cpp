@@ -303,6 +303,7 @@ void rcCalcGridSize(const float* minBounds, const float* maxBounds, const float 
 	*sizeZ = (int)((maxBounds[2] - minBounds[2]) / cellSize + 0.5f);
 }
 
+//初始化一个新的高度场
 bool rcCreateHeightfield(rcContext* context, rcHeightfield& heightfield, int sizeX, int sizeZ,
                          const float* minBounds, const float* maxBounds,
                          float cellSize, float cellHeight)
@@ -333,6 +334,7 @@ static void calcTriNormal(const float* v0, const float* v1, const float* v2, flo
 	rcVnormalize(faceNormal);
 }
 
+// 将所有斜率低于指定值的三角形的区域 ID 设置为 #RC_WALKABLE_AREA。
 void rcMarkWalkableTriangles(rcContext* context, const float walkableSlopeAngle,
                              const float* verts, const int numVerts,
                              const int* tris, const int numTris,
@@ -357,6 +359,7 @@ void rcMarkWalkableTriangles(rcContext* context, const float walkableSlopeAngle,
 	}
 }
 
+// 将所有斜率高于于指定值的三角形的区域 ID 设置为 #RC_NULL_AREA。
 void rcClearUnwalkableTriangles(rcContext* context, const float walkableSlopeAngle,
                                 const float* verts, int numVerts,
                                 const int* tris, int numTris,
@@ -381,6 +384,7 @@ void rcClearUnwalkableTriangles(rcContext* context, const float walkableSlopeAng
 	}
 }
 
+/// 返回指定高度场(heightfield)中包含的span数(areaId != 0)
 int rcGetHeightFieldSpanCount(rcContext* context, const rcHeightfield& heightfield)
 {
 	rcIgnoreUnused(context);
@@ -400,6 +404,7 @@ int rcGetHeightFieldSpanCount(rcContext* context, const rcHeightfield& heightfie
 	return spanCount;
 }
 
+/// 从表示实体空间的高度场构建表示开放空间的紧凑高度场。
 bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, const int walkableClimb,
                                const rcHeightfield& heightfield, rcCompactHeightfield& compactHeightfield)
 {
@@ -453,13 +458,13 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 	for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex)
 	{
 		const rcSpan* span = heightfield.spans[columnIndex];
-			
+
 		// If there are no spans at this cell, just leave the data to index=0, count=0.
 		if (span == NULL)
 		{
 			continue;
 		}
-			
+
 		rcCompactCell& cell = compactHeightfield.cells[columnIndex];
 		cell.index = currentCellIndex;
 		cell.count = 0;
@@ -468,6 +473,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 		{
 			if (span->area != RC_NULL_AREA)
 			{
+				// 构建空心体素
 				const int bot = (int)span->smax;
 				const int top = span->next ? (int)span->next->smin : MAX_HEIGHT;
 				compactHeightfield.spans[currentCellIndex].y = (unsigned short)rcClamp(bot, 0, 0xffff);
@@ -478,8 +484,9 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 			}
 		}
 	}
-	
+
 	// Find neighbour connections.
+	// 最高63层
 	const int MAX_LAYERS = RC_NOT_CONNECTED - 1;
 	int maxLayerIndex = 0;
 	const int zStride = xSize; // for readability
@@ -505,6 +512,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 
 					// Iterate over all neighbour spans and check if any of the is
 					// accessible from current cell.
+					// 迭代所有邻居跨度并检查是否可以从当前单元访问其中任何一个。
 					const rcCompactCell& neighborCell = compactHeightfield.cells[neighborX + neighborZ * zStride];
 					for (int k = (int)neighborCell.index, nk = (int)(neighborCell.index + neighborCell.count); k < nk; ++k)
 					{
@@ -514,6 +522,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 
 						// Check that the gap between the spans is walkable,
 						// and that the climb height between the gaps is not too high.
+						// 检查跨度之间的间隙是否适合步行，间隙之间的爬升高度不要太高。
 						if ((top - bot) >= walkableHeight && rcAbs((int)neighborSpan.y - (int)span.y) <= walkableClimb)
 						{
 							// Mark direction as walkable.
@@ -523,6 +532,7 @@ bool rcBuildCompactHeightfield(rcContext* context, const int walkableHeight, con
 								maxLayerIndex = rcMax(maxLayerIndex, layerIndex);
 								continue;
 							}
+							// 设置为与邻居的第layerIndex层连通
 							rcSetCon(span, dir, layerIndex);
 							break;
 						}

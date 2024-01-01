@@ -21,6 +21,8 @@
 
 // Note: This header file's only purpose is to include define assert.
 // Feel free to change the file and include your own implementation instead.
+// 注意：此头文件的唯一目的是包含定义断言。
+// 请随意更改该文件并包含您自己的实现。
 
 #ifdef RC_DISABLE_ASSERTS
 
@@ -30,17 +32,24 @@
 #else
 
 /// An assertion failure function.
-//  @param[in]		expression  asserted expression.
-//  @param[in]		file  Filename of the failed assertion.
-//  @param[in]		line  Line number of the failed assertion.
+///  @param[in]		expression  asserted expression.
+///  @param[in]		file  Filename of the failed assertion.
+///  @param[in]		line  Line number of the failed assertion.
 ///  @see dtAssertFailSetCustom
+/// 断言失败函数。
+///  @param[in]		expression  断言的表达。
+///  @param[in]		file  失败断言的文件名。
+///  @param[in]		line  失败断言的行号。
 typedef void (dtAssertFailFunc)(const char* expression, const char* file, int line);
 
 /// Sets the base custom assertion failure function to be used by Detour.
 ///  @param[in]		assertFailFunc	The function to be invoked in case of failure of #dtAssert
+/// 设置 Detour 使用的基本自定义断言失败函数。
+///  @param[in]		assertFailFunc	#dtAssert 失败时调用的函数
 void dtAssertFailSetCustom(dtAssertFailFunc *assertFailFunc);
 
 /// Gets the base custom assertion failure function to be used by Detour.
+/// 获取 Detour 使用的基本自定义断言失败函数。
 dtAssertFailFunc* dtAssertFailGetCustom();
 
 #	include <assert.h> 

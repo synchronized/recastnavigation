@@ -63,10 +63,11 @@ void duIntToCol(int i, float* col)
 	col[2] = 1 - b*63.0f/255.0f;
 }
 
+// 计算长方体颜色
 void duCalcBoxColors(unsigned int* colors, unsigned int colTop, unsigned int colSide)
 {
 	if (!colors) return;
-	
+
 	colors[0] = duMultCol(colTop, 250);
 	colors[1] = duMultCol(colSide, 140);
 	colors[2] = duMultCol(colSide, 165);
@@ -75,88 +76,97 @@ void duCalcBoxColors(unsigned int* colors, unsigned int colTop, unsigned int col
 	colors[5] = duMultCol(colSide, 217);
 }
 
+// 绘制圆柱体
 void duDebugDrawCylinderWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 							 float maxx, float maxy, float maxz, unsigned int col, const float lineWidth)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendCylinderWire(dd, minx,miny,minz, maxx,maxy,maxz, col);
 	dd->end();
 }
 
+// 绘制正方体(12条棱)
 void duDebugDrawBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 						float maxx, float maxy, float maxz, unsigned int col, const float lineWidth)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendBoxWire(dd, minx,miny,minz, maxx,maxy,maxz, col);
 	dd->end();
 }
 
+// 绘制弧度
 void duDebugDrawArc(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
 					const float x1, const float y1, const float z1, const float h,
 					const float as0, const float as1, unsigned int col, const float lineWidth)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendArc(dd, x0,y0,z0, x1,y1,z1, h, as0, as1, col);
 	dd->end();
 }
 
+// 绘制一个箭头
 void duDebugDrawArrow(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
 					  const float x1, const float y1, const float z1,
 					  const float as0, const float as1, unsigned int col, const float lineWidth)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendArrow(dd, x0,y0,z0, x1,y1,z1, as0, as1, col);
 	dd->end();
 }
 
+// 绘制一个圆(40条边)
 void duDebugDrawCircle(struct duDebugDraw* dd, const float x, const float y, const float z,
 					   const float r, unsigned int col, const float lineWidth)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendCircle(dd, x,y,z, r, col);
 	dd->end();
 }
 
+// 绘制一个叉
 void duDebugDrawCross(struct duDebugDraw* dd, const float x, const float y, const float z,
 					  const float size, unsigned int col, const float lineWidth)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_LINES, lineWidth);
 	duAppendCross(dd, x,y,z, size, col);
 	dd->end();
 }
 
+// 绘制长方体(6个面)
 void duDebugDrawBox(struct duDebugDraw* dd, float minx, float miny, float minz,
 					float maxx, float maxy, float maxz, const unsigned int* fcol)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_QUADS);
 	duAppendBox(dd, minx,miny,minz, maxx,maxy,maxz, fcol);
 	dd->end();
 }
 
+// 绘制圆柱体(三角形)
 void duDebugDrawCylinder(struct duDebugDraw* dd, float minx, float miny, float minz,
 						 float maxx, float maxy, float maxz, unsigned int col)
 {
 	if (!dd) return;
-	
+
 	dd->begin(DU_DRAW_TRIS);
 	duAppendCylinder(dd, minx,miny,minz, maxx,maxy,maxz, col);
 	dd->end();
 }
 
+// 绘制一个xz坐标的格子
 void duDebugDrawGridXZ(struct duDebugDraw* dd, const float ox, const float oy, const float oz,
 					   const int w, const int h, const float size,
 					   const unsigned int col, const float lineWidth)
@@ -176,8 +186,9 @@ void duDebugDrawGridXZ(struct duDebugDraw* dd, const float ox, const float oy, c
 	}
 	dd->end();
 }
-		 
 
+
+// 绘制圆柱体(16条棱/显示4条棱)
 void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 						  float maxx, float maxy, float maxz, unsigned int col)
 {
@@ -196,12 +207,12 @@ void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float 
 			dir[i*2+1] = dtMathSinf(a);
 		}
 	}
-	
+
 	const float cx = (maxx + minx)/2;
 	const float cz = (maxz + minz)/2;
 	const float rx = (maxx - minx)/2;
 	const float rz = (maxz - minz)/2;
-	
+
 	for (int i = 0, j = NUM_SEG-1; i < NUM_SEG; j = i++)
 	{
 		dd->vertex(cx+dir[j*2+0]*rx, miny, cz+dir[j*2+1]*rz, col);
@@ -216,6 +227,7 @@ void duAppendCylinderWire(struct duDebugDraw* dd, float minx, float miny, float 
 	}
 }
 
+// 绘制长方体(12条棱)
 void duAppendBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 					 float maxx, float maxy, float maxz, unsigned int col)
 {
@@ -229,7 +241,7 @@ void duAppendBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 	dd->vertex(minx, miny, maxz, col);
 	dd->vertex(minx, miny, maxz, col);
 	dd->vertex(minx, miny, minz, col);
-	
+
 	// bottom
 	dd->vertex(minx, maxy, minz, col);
 	dd->vertex(maxx, maxy, minz, col);
@@ -239,7 +251,7 @@ void duAppendBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 	dd->vertex(minx, maxy, maxz, col);
 	dd->vertex(minx, maxy, maxz, col);
 	dd->vertex(minx, maxy, minz, col);
-	
+
 	// Sides
 	dd->vertex(minx, miny, minz, col);
 	dd->vertex(minx, maxy, minz, col);
@@ -251,6 +263,7 @@ void duAppendBoxWire(struct duDebugDraw* dd, float minx, float miny, float minz,
 	dd->vertex(minx, maxy, maxz, col);
 }
 
+// 绘制长方体(点)
 void duAppendBoxPoints(struct duDebugDraw* dd, float minx, float miny, float minz,
 					   float maxx, float maxy, float maxz, unsigned int col)
 {
@@ -264,7 +277,7 @@ void duAppendBoxPoints(struct duDebugDraw* dd, float minx, float miny, float min
 	dd->vertex(minx, miny, maxz, col);
 	dd->vertex(minx, miny, maxz, col);
 	dd->vertex(minx, miny, minz, col);
-	
+
 	// bottom
 	dd->vertex(minx, maxy, minz, col);
 	dd->vertex(maxx, maxy, minz, col);
@@ -276,6 +289,7 @@ void duAppendBoxPoints(struct duDebugDraw* dd, float minx, float miny, float min
 	dd->vertex(minx, maxy, minz, col);
 }
 
+// 绘制长方体(6个面)
 void duAppendBox(struct duDebugDraw* dd, float minx, float miny, float minz,
 				 float maxx, float maxy, float maxz, const unsigned int* fcol)
 {
@@ -300,7 +314,7 @@ void duAppendBox(struct duDebugDraw* dd, float minx, float miny, float minz,
 		2, 6, 7, 3,
 		0, 4, 5, 1,
 	};
-	
+
 	const unsigned char* in = inds;
 	for (int i = 0; i < 6; ++i)
 	{
@@ -311,11 +325,12 @@ void duAppendBox(struct duDebugDraw* dd, float minx, float miny, float minz,
 	}
 }
 
+// 绘制圆柱体(三角形)
 void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz,
 					  float maxx, float maxy, float maxz, unsigned int col)
 {
 	if (!dd) return;
-	
+
 	static const int NUM_SEG = 16;
 	static float dir[NUM_SEG*2];
 	static bool init = false;
@@ -329,9 +344,9 @@ void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz
 			dir[i*2+1] = sinf(a);
 		}
 	}
-	
+
 	unsigned int col2 = duMultCol(col, 160);
-	
+
 	const float cx = (maxx + minx)/2;
 	const float cz = (maxz + minz)/2;
 	const float rx = (maxx - minx)/2;
@@ -363,7 +378,7 @@ void duAppendCylinder(struct duDebugDraw* dd, float minx, float miny, float minz
 	}
 }
 
-
+// 计算弧度
 inline void evalArc(const float x0, const float y0, const float z0,
 					const float dx, const float dy, const float dz,
 					const float h, const float u, float* res)
@@ -373,7 +388,7 @@ inline void evalArc(const float x0, const float y0, const float z0,
 	res[2] = z0 + dz * u;
 }
 
-
+// 3D向量叉乘
 inline void vcross(float* dest, const float* v1, const float* v2)
 {
 	dest[0] = v1[1]*v2[2] - v1[2]*v2[1];
@@ -381,6 +396,7 @@ inline void vcross(float* dest, const float* v1, const float* v2)
 	dest[2] = v1[0]*v2[1] - v1[1]*v2[0]; 
 }
 
+// 3D向量归一化
 inline void vnormalize(float* v)
 {
 	float d = 1.0f / sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
@@ -389,6 +405,7 @@ inline void vnormalize(float* v)
 	v[2] *= d;
 }
 
+// 3D向量减法
 inline void vsub(float* dest, const float* v1, const float* v2)
 {
 	dest[0] = v1[0]-v2[0];
@@ -396,6 +413,7 @@ inline void vsub(float* dest, const float* v1, const float* v2)
 	dest[2] = v1[2]-v2[2];
 }
 
+// 3D向量模的平方
 inline float vdistSqr(const float* v1, const float* v2)
 {
 	const float x = v1[0]-v2[0];
@@ -404,7 +422,7 @@ inline float vdistSqr(const float* v1, const float* v2)
 	return x*x + y*y + z*z;
 }
 
-
+// 绘制一个箭头
 void appendArrowHead(struct duDebugDraw* dd, const float* p, const float* q,
 					 const float s, unsigned int col)
 {
@@ -425,9 +443,10 @@ void appendArrowHead(struct duDebugDraw* dd, const float* p, const float* q,
 	dd->vertex(p, col);
 //	dd->vertex(p[0]+az[0]*s-ay[0]*s/2, p[1]+az[1]*s-ay[1]*s/2, p[2]+az[2]*s-ay[2]*s/2, col);
 	dd->vertex(p[0]+az[0]*s-ax[0]*s/3, p[1]+az[1]*s-ax[1]*s/3, p[2]+az[2]*s-ax[2]*s/3, col);
-	
+
 }
 
+// 绘制弧度
 void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
 				 const float x1, const float y1, const float z1, const float h,
 				 const float as0, const float as1, unsigned int col)
@@ -451,7 +470,7 @@ void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const f
 		dd->vertex(pt[0],pt[1],pt[2], col);
 		prev[0] = pt[0]; prev[1] = pt[1]; prev[2] = pt[2];
 	}
-	
+
 	// End arrows
 	if (as0 > 0.001f)
 	{
@@ -470,6 +489,7 @@ void duAppendArc(struct duDebugDraw* dd, const float x0, const float y0, const f
 	}
 }
 
+// 绘制箭头
 void duAppendArrow(struct duDebugDraw* dd, const float x0, const float y0, const float z0,
 				   const float x1, const float y1, const float z1,
 				   const float as0, const float as1, unsigned int col)
@@ -478,7 +498,7 @@ void duAppendArrow(struct duDebugDraw* dd, const float x0, const float y0, const
 
 	dd->vertex(x0,y0,z0, col);
 	dd->vertex(x1,y1,z1, col);
-	
+
 	// End arrows
 	const float p[3] = {x0,y0,z0}, q[3] = {x1,y1,z1};
 	if (as0 > 0.001f)
@@ -487,6 +507,7 @@ void duAppendArrow(struct duDebugDraw* dd, const float x0, const float y0, const
 		appendArrowHead(dd, q, p, as1, col);
 }
 
+// 绘制一个圆(40条边)
 void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const float z,
 					const float r, unsigned int col)
 {
@@ -496,6 +517,7 @@ void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const 
 	static bool init = false;
 	if (!init)
 	{
+		//初始化40等分每个角度的sin,cos值
 		init = true;
 		for (int i = 0; i < NUM_SEG; ++i)
 		{
@@ -504,7 +526,7 @@ void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const 
 			dir[i*2+1] = sinf(a);
 		}
 	}
-	
+
 	for (int i = 0, j = NUM_SEG-1; i < NUM_SEG; j = i++)
 	{
 		dd->vertex(x+dir[j*2+0]*r, y, z+dir[j*2+1]*r, col);
@@ -512,6 +534,7 @@ void duAppendCircle(struct duDebugDraw* dd, const float x, const float y, const 
 	}
 }
 
+// 绘制一个叉
 void duAppendCross(struct duDebugDraw* dd, const float x, const float y, const float z,
 				   const float s, unsigned int col)
 {
@@ -557,7 +580,7 @@ void duDisplayList::resize(int cap)
 		memcpy(newColor, m_color, sizeof(unsigned int)*m_size);
 	delete [] m_color;
 	m_color = newColor;
-	
+
 	m_cap = cap;
 }
 
